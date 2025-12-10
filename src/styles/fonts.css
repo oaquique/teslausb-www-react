@@ -1,0 +1,52 @@
+/* Lato Font - Local fallback for offline use */
+/* These fonts should be placed in /public/fonts/ */
+
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lato Regular'), local('Lato-Regular'),
+       url('/fonts/lato-regular.woff2') format('woff2'),
+       url('/fonts/lato-regular.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: local('Lato Medium'), local('Lato-Medium'),
+       url('/fonts/lato-medium.woff2') format('woff2'),
+       url('/fonts/lato-medium.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Lato Semibold'), local('Lato-Semibold'),
+       url('/fonts/lato-semibold.woff2') format('woff2'),
+       url('/fonts/lato-semibold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lato Bold'), local('Lato-Bold'),
+       url('/fonts/lato-bold.woff2') format('woff2'),
+       url('/fonts/lato-bold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Lato';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lato Italic'), local('Lato-Italic'),
+       url('/fonts/lato-italic.woff2') format('woff2'),
+       url('/fonts/lato-italic.woff') format('woff');
+}

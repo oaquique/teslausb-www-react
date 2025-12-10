@@ -1,0 +1,22 @@
+{
+  "name": "TeslaUSB",
+  "short_name": "TeslaUSB",
+  "description": "TeslaUSB Dashboard - Manage your Tesla dashcam and music storage",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1f2937",
+  "theme_color": "#1f2937",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

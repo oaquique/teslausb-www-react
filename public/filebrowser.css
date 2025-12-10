@@ -1,0 +1,592 @@
+/* FileBrowser CSS - Adapted for TeslaUSB React UI */
+/* Uses Lato font and consistent color scheme with main UI */
+
+.fb-dragimage {
+  width: 300px;
+  height: 150px;
+  top: -500px;
+  background: #0095f6;
+  position: fixed;
+}
+
+.fb-splitter {
+  width: 3px;
+  background: #e5e7eb;
+  border-style: solid;
+  border-color: #d1d5db;
+  border-width: 0 1px;
+  cursor: col-resize;
+  margin-left: 1px;
+  margin-right: 1px;
+  touch-action: none;
+}
+
+.fb-splitterflag {
+  position: fixed;
+  width: 40px;
+  height: 64px;
+  top: 50%;
+  background: #e5e7eb;
+  border-style: solid;
+  border-color: #d1d5db;
+  border-width: 1px 0px 1px 1px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+@media(hover: hover) {
+  .fb-splitterflag {
+    visibility: hidden;
+  }
+}
+
+.fb-selection-rect {
+  position: absolute;
+  background-color: rgba(0, 149, 246, 0.3);
+}
+
+.fb-tree {
+  overflow-y: auto;
+  flex-grow: 1;
+  padding-left: 30px;
+  margin-top: 4px;
+  margin-bottom: 0;
+  font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.fb-tree ul {
+  padding-left: 20px;
+}
+
+.fb-tree li {
+  display: block;
+  position: relative;
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+.fb-tree summary {
+  display: block;
+  cursor: pointer;
+  width: max-content;
+  padding: 4px 8px;
+  margin-left: 2px;
+  color: #1f2937;
+  font-weight: 500;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
+.fb-tree summary:hover {
+  color: #fff;
+  background: #0095f6;
+  border-radius: 4px;
+}
+
+.fb-tree summary::before {
+  content: '';
+  top: 4px;
+  left: -18px;
+  width: 14px;
+  height: 14px;
+  display: block;
+  position: absolute;
+  background: #e5e7eb;
+  border-radius: 50%;
+}
+
+.fb-tree summary:has(+ ul:not(:empty))::before {
+  background: #93c5fd;
+}
+
+.fb-tree details[open] > summary:has(+ ul:not(:empty))::before {
+  background: #0095f6;
+}
+
+summary.fb-droptarget,
+.fb-direntry.fb-droptarget,
+.fb-fileentry.fb-droptarget {
+  color: #fff;
+  background: #22c55e;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px #22c55e;
+}
+
+summary.fb-droptarget.fb-selected,
+.fb-direntry.fb-droptarget.fb-selected,
+.fb-fileentry.fb-droptarget.fb-selected {
+  color: #fff;
+  background: #22c55e;
+  border-radius: 4px;
+  box-shadow: 0 0 0 30px #dbeafe;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0 50%)
+}
+
+.fb-fileslist.fb-droptarget {
+  box-shadow: inset 0 0 0 3px #22c55e;
+}
+
+.fb-treediv > ul.fb-droptarget,
+details > ul.fb-droptarget {
+  box-shadow: inset 0 0 0 3px #22c55e;
+}
+
+.fb-treerootpath {
+  position: relative;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  overflow: hidden;
+  white-space: nowrap;
+  min-height: 36px;
+  max-height: 36px;
+  font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+}
+
+.fb-diskinfo-outer {
+  position: absolute;
+  right: 4px;
+  bottom: 8px;
+  width: 20px;
+  height: 20px;
+  background: white;
+}
+
+.fb-diskinfo-inner {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  border-color: #9ca3af;
+  border: 1px solid;
+  border-radius: 50%;
+  font-weight: normal;
+  color: #9ca3af;
+  text-align: center;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.fb-diskinfo-inner::before {
+  content: 'i';
+}
+
+.fb-diskinfo-outer:hover .fb-diskinfo-inner {
+  color: #0095f6;
+  background: #dbeafe;
+  border-color: #0095f6;
+}
+
+.fb-diskinfo {
+  visibility: hidden;
+  position: fixed;
+  margin-top: 24px;
+  height: auto;
+  width: auto;
+  z-index: 1;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px 12px;
+  text-align: center;
+  background: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.fb-diskinfo-outer:hover .fb-diskinfo {
+  visibility: visible;
+}
+
+.fb-treerootpath:has(.fb-treerootpathsinglelabel) {
+  padding: 8px 12px;
+  min-height: 36px;
+  max-height: 36px;
+}
+
+.fb-dirpath {
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  overflow: hidden;
+  white-space: nowrap;
+  min-height: 36px;
+  max-height: 36px;
+  font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1f2937;
+}
+
+.fb-crumb {
+  color: #0095f6;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.fb-crumb:hover {
+  text-decoration: underline;
+}
+
+.fb-crumb.fb-droptarget {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+.fb-fileentry {
+  cursor: pointer;
+  padding: 4px 8px;
+  width: max-content;
+  margin-left: 1px;
+  font-size: 13px;
+  color: #374151;
+  border-radius: 4px;
+  font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.fb-fileentry:hover:not([contenteditable="true"]) {
+  color: #fff;
+  background: #0095f6;
+  border-radius: 4px;
+}
+
+.fb-fileentry.fb-selected {
+  color: #1e40af;
+  background: #dbeafe;
+}
+
+.fb-fileentry.fb-selected:hover:not([contenteditable="true"]) {
+  color: #fff;
+  background: #2563eb;
+  border-radius: 4px;
+  box-shadow: 0 0 0 30px #dbeafe;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0 50%)
+}
+
+.fb-direntry {
+  cursor: pointer;
+  padding: 4px 8px;
+  font-weight: 500;
+  width: max-content;
+  margin-left: 1px;
+  font-size: 13px;
+  color: #1f2937;
+  border-radius: 4px;
+  font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.fb-direntry:hover:not([contenteditable="true"]) {
+  color: #fff;
+  background: #0095f6;
+  border-radius: 4px;
+}
+
+.fb-direntry.fb-selected {
+  color: #1e40af;
+  background: #dbeafe;
+}
+
+.fb-direntry.fb-selected:hover:not([contenteditable="true"]) {
+  color: #fff;
+  background: #2563eb;
+  box-shadow: 0 0 0 30px #dbeafe;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0 50%)
+}
+
+.fb-treediv {
+  display: flex;
+  flex-direction: column;
+  float: left;
+  background: #fafafa;
+  min-width: 15%;
+  max-width: 85%;
+  width: 30%;
+  height: 100%;
+  overflow-y: auto;
+  user-select: none;
+  border-right: 1px solid #e5e7eb;
+}
+
+.fb-filesdiv {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  float: left;
+  background: #fff;
+  height: 100%;
+  margin-left: 0;
+  overflow-x: auto;
+  user-select: none;
+}
+
+.fb-fileslist {
+  position: relative;
+  height: 100%;
+  margin-top: 4px;
+  overflow-y: auto;
+  flex-grow: 1;
+  padding: 4px;
+}
+
+.fb-playertitle {
+  color: #fff;
+  height: 30px;
+  padding: 10px 8px 6px 8px;
+  white-space: nowrap;
+  overflow: auto;
+  text-align: left;
+  scroll-behavior: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.fb-playertitle::-webkit-scrollbar {
+  display: none;
+}
+
+.fb-player {
+  position: absolute;
+  width: 300px;
+  height: 100px;
+  left: 50%;
+  top: 75%;
+  background: #1f2937;
+  border: none;
+  border-radius: 12px;
+  padding: 10px;
+  transform: translate(-50%, -50%);
+}
+
+.fb-dropinfo-holder {
+  position: fixed;
+  visibility: hidden;
+  z-index: 98;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0);
+}
+
+.fb-dropinfo {
+  width: 350px;
+  height: 150px;
+  top: calc(100% / 2 - 75px);
+  left: calc(100% / 2 - 175px);
+  border-radius: 8px;
+  position: relative;
+  visibility: inherit;
+  background: white;
+  border: 1px solid #e5e7eb;
+  z-index: 99;
+  padding: 1px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  user-select: none;
+  outline: none !important;
+  font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.fb-dropinfo-line1 {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.fb-dropinfo-line2 {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 40px;
+  height: 30px;
+  white-space: nowrap;
+  overflow: auto;
+  text-align: left;
+  scroll-behavior: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.fb-dropinfo-line2::-webkit-scrollbar {
+  display: none;
+}
+
+.fb-dropinfo-line3 {
+  position: absolute;
+  left: 20px;
+  right: 60px;
+  bottom: 5px;
+  height: 30px;
+  white-space: nowrap;
+  overflow: auto;
+  text-align: left;
+  scroll-behavior: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.fb-dropinfo-line3::-webkit-scrollbar {
+  display: none;
+}
+
+.fb-dropinfo-closebutton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background: white;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #9ca3af;
+  line-height: 24px;
+}
+
+.fb-dropinfo-closebutton:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.fb-dropinfo-cancel {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.fb-dropinfo-cancel:hover {
+  background: #f3f4f6;
+}
+
+.fb-dropinfo-progress {
+  position: absolute;
+  left: 20px;
+  width: calc(100% - 40px);
+  top: 90px;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #e5e7eb;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.fb-dropinfo-progress::-webkit-progress-bar {
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+.fb-dropinfo-progress::-webkit-progress-value {
+  background: #0095f6;
+  border-radius: 4px;
+}
+
+.fb-dropinfo-progress::-moz-progress-bar {
+  background: #0095f6;
+  border-radius: 4px;
+}
+
+.fb-barbutton {
+  float: left;
+  width: 40px;
+  height: 40px;
+  border: none;
+  padding: 0;
+  z-index: 3;
+  display: none;
+  cursor: pointer;
+  border-radius: 8px;
+  margin: 4px;
+  background-size: 24px 24px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.fb-barbutton:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.fb-barbutton.fb-visiblebarbutton {
+  display: block;
+}
+
+.fb-trashbutton {
+  background-image: url(icons/trash.svg);
+}
+
+.fb-pencilbutton {
+  background-image: url(icons/pencil.svg);
+}
+
+.fb-uploadbutton {
+  background-image: url(icons/upload.svg);
+}
+
+.fb-downloadbutton {
+  background-image: url(icons/download.svg);
+}
+
+.fb-newfolderbutton {
+  background-image: url(icons/newfolder.svg);
+}
+
+.fb-locksoundbutton {
+  background-image: url(icons/locksound.svg);
+}
+
+.fb-buttonbar {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  height: 48px;
+  padding: 0 4px;
+  background: #fff;
+  z-index: 2;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+}
+
+@media(hover: hover) {
+  .uploadbutton {
+    display: none;
+  }
+}
+
+.fb-driveselector {
+  font-size: 14px;
+  font-family: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: transparent;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #d1d5db;
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: #1f2937;
+}
+
+.fb-driveselector:focus {
+  outline: none;
+  border-color: #0095f6;
+}
