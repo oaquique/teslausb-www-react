@@ -187,11 +187,13 @@ if [ -f "/var/www/html/contextmenu.css" ]; then
     sudo cp /var/www/html/contextmenu.css /tmp/teslausb-www-deploy/
 fi
 
-# Preserve filebrowser files (in case they're still needed)
-if [ -f "/var/www/html/filebrowser.js" ]; then
+# Preserve filebrowser files only if new ones don't exist
+if [ -f "/var/www/html/filebrowser.js" ] && [ ! -f "/tmp/teslausb-www-deploy/filebrowser.js" ]; then
+    echo "Preserving filebrowser.js..."
     sudo cp /var/www/html/filebrowser.js /tmp/teslausb-www-deploy/
 fi
-if [ -f "/var/www/html/filebrowser.css" ]; then
+if [ -f "/var/www/html/filebrowser.css" ] && [ ! -f "/tmp/teslausb-www-deploy/filebrowser.css" ]; then
+    echo "Preserving filebrowser.css..."
     sudo cp /var/www/html/filebrowser.css /tmp/teslausb-www-deploy/
 fi
 
