@@ -74,3 +74,35 @@
 ### Repository
 - Created as standalone repo (separate from main teslausb repo)
 - GitHub: https://github.com/oaquique/teslausb-www-react (private)
+
+## 2025-12-09 - Storage Bar Fix & Device Model Display
+
+### Added CGI Scripts (`cgi-bin/`)
+- **`storage.sh`** - Returns per-drive storage information as JSON
+  - Reports TeslaCam, Music, LightShow, and Boombox drive allocations
+  - Shows actual usage when drives are mounted
+  - Caches usage data in `/tmp/teslausb-storage-cache/` for when drives are unmounted
+  - Displays cached values with `~` indicator (e.g., "45.4 GB used~")
+- **`status.sh`** - Updated to include `device_model` field
+  - Reads from `/proc/device-tree/model` (works on RPi, Radxa, etc.)
+
+### Updated Components
+- **`Sidebar.jsx`** - Added device model display at top of System card
+  - Shows full model name (e.g., "Raspberry Pi 5 Model B Rev 1.0")
+
+### Updated Deployment
+- **`deploy.sh`** - Now includes local `cgi-bin/` scripts in deployment
+  - Uploads scripts from `cgi-bin/` directory to Pi
+  - Merges with existing cgi-bin (preserves Pi's scripts, adds/overwrites new ones)
+  - Sets executable permissions on all `.sh` files
+
+### Added Assets
+- **`public/fonts/`** - Added Lato font files (were missing)
+  - `lato-regular.woff2`
+  - `lato-bold.woff2`
+  - `lato-italic.woff2`
+
+### Fixes
+1. **Storage bar empty** - Created `storage.sh` CGI script to provide per-drive storage data
+2. **Missing fonts** - Downloaded and added Lato woff2 font files to public/fonts/
+3. **Device model display** - Added model info to status API and Sidebar component

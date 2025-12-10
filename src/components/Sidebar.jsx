@@ -97,6 +97,12 @@ export function Sidebar({ status, computed, config, expanded, onToggle, onRefres
           </button>
         </div>
         <div className="info-list">
+          {status?.device_model && (
+            <div className="info-item">
+              <span className="info-label">Model</span>
+              <span className="info-value small-text">{status.device_model}</span>
+            </div>
+          )}
           <div className="info-item">
             <span className="info-label">Uptime</span>
             <span className="info-value">{computed?.uptimeFormatted || '-'}</span>

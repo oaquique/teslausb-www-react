@@ -105,8 +105,17 @@ else
     scp -r dist/* "${REMOTE_HOST}:/tmp/teslausb-www-new/"
 fi
 
-# Also upload cgi-bin from the teslausb-www source as fallback
+# Upload local cgi-bin scripts (new scripts we've added)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOCAL_CGI="$SCRIPT_DIR/cgi-bin"
+if [ -d "$LOCAL_CGI" ]; then
+    echo -e "${YELLOW}Uploading local cgi-bin scripts...${NC}"
+    ssh "$REMOTE_HOST" "mkdir -p /tmp/teslausb-cgi-local"
+    rsync -avz "$LOCAL_CGI/" "${REMOTE_HOST}:/tmp/teslausb-cgi-local/" 2>/dev/null || \
+        scp -r "$LOCAL_CGI"/* "${REMOTE_HOST}:/tmp/teslausb-cgi-local/"
+fi
+
+# Also upload cgi-bin from the teslausb-www source as fallback
 CGI_SRC="$SCRIPT_DIR/../teslausb-www/html/cgi-bin"
 if [ -d "$CGI_SRC" ]; then
     echo -e "${YELLOW}Uploading cgi-bin scripts as fallback...${NC}"
@@ -154,6 +163,14 @@ if [ -d "/var/www/html/cgi-bin" ]; then
 elif [ -d "/tmp/teslausb-cgi-bin" ]; then
     echo "Installing cgi-bin from source..."
     sudo cp -r /tmp/teslausb-cgi-bin /tmp/teslausb-www-deploy/cgi-bin
+fi
+
+# Merge in local cgi-bin scripts (overwrite/add new scripts)
+if [ -d "/tmp/teslausb-cgi-local" ]; then
+    echo "Installing local cgi-bin scripts..."
+    sudo mkdir -p /tmp/teslausb-www-deploy/cgi-bin
+    sudo cp -r /tmp/teslausb-cgi-local/* /tmp/teslausb-www-deploy/cgi-bin/
+    sudo chmod +x /tmp/teslausb-www-deploy/cgi-bin/*.sh
 fi
 
 # Preserve fancyindex CSS for TeslaCam directory listing
@@ -232,6 +249,7 @@ fi
 # Cleanup temp files
 sudo rm -rf /tmp/teslausb-www-new
 sudo rm -rf /tmp/teslausb-cgi-bin 2>/dev/null || true
+sudo rm -rf /tmp/teslausb-cgi-local 2>/dev/null || true
 sudo rm -rf /tmp/teslausb-www-deploy 2>/dev/null || true
 
 echo ""
