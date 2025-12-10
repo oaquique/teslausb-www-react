@@ -106,3 +106,11 @@
 1. **Storage bar empty** - Created `storage.sh` CGI script to provide per-drive storage data
 2. **Missing fonts** - Downloaded and added Lato woff2 font files to public/fonts/
 3. **Device model display** - Added model info to status API and Sidebar component
+4. **FileBrowser not loading** - Fixed deploy.sh overwriting our `filebrowser.js` with Pi's old version
+   - Changed preserve logic to only copy Pi's filebrowser files if new ones don't exist
+   - Our version includes `window.FileBrowser = FileBrowser;` export required for dynamic loading
+
+### Tested On
+- Raspberry Pi 4 Model B (tusbm3b)
+- Raspberry Pi 5 Model B (tusbm3a)
+- Radxa ROCK Pi 4C+ (tusbm3e)
