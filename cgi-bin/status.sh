@@ -49,13 +49,23 @@ read -r -d ' ' ut < /proc/uptime
 # Get device model (works on Raspberry Pi, Radxa, etc.)
 device_model=$(tr -d '\0' < /proc/device-tree/model 2>/dev/null || echo "Unknown")
 
+# Get CPU temperature (check multiple locations for different devices)
+cpu_temp=""
+if [ -f /sys/class/thermal/thermal_zone0/temp ]; then
+  # Raspberry Pi and many other devices
+  cpu_temp=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null)
+elif [ -f /sys/class/hwmon/hwmon0/temp1_input ]; then
+  # Radxa Rock Pi and similar devices
+  cpu_temp=$(cat /sys/class/hwmon/hwmon0/temp1_input 2>/dev/null)
+fi
+
 cat << EOF
 HTTP/1.0 200 OK
 Content-type: application/json
 
 {
    "device_model": "$device_model",
-   "cpu_temp": "$(cat /sys/class/thermal/thermal_zone0/temp)",
+   "cpu_temp": "$cpu_temp",
    "num_snapshots": "$numsnapshots",
    "snapshot_oldest": "$oldestsnapshot",
    "snapshot_newest": "$newestsnapshot",
