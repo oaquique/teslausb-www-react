@@ -18,9 +18,10 @@ if pgrep -f "rsync.*music" > /dev/null 2>&1; then
   # Format: "    1,234,567,890  45%   12.34MB/s    0:01:23"
   # Or:     "1695349328   6%    1.07MB/s    6:27:37"
   if [ -f "$LOG" ]; then
-    # Get the last line containing a percentage (number followed by %)
-    # Remove carriage returns since rsync uses them for in-place updates
-    progress_line=$(grep -E '[0-9]+%' "$LOG" 2>/dev/null | tr -d '\r' | tail -1)
+    # Get the last progress update from rsync --info=progress2 output
+    # rsync uses \r for in-place updates, so the latest progress may not have a trailing newline
+    # Use tail -c to get the last chunk, then extract the most recent progress line
+    progress_line=$(tail -c 500 "$LOG" 2>/dev/null | tr '\r' '\n' | grep -E '[0-9]+%' | tail -1)
 
     if [ -n "$progress_line" ]; then
       # Parse using more flexible pattern matching

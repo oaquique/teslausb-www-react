@@ -162,7 +162,7 @@
 - Frontend only polls progress endpoint when music sync is detected from archiveloop.log
 - Backend script changes kept separate from upstream teslausb repo for clean commits
 
-## 2025-12-13 - Music Sync Progress Fix
+## 2025-12-13 - Music Sync Progress Fixes
 
 ### Fixed
 - **CGI script carriage return issue** - rsync uses `\r` (carriage return) for in-place progress updates, which was corrupting the JSON output
@@ -170,6 +170,11 @@
   - Changed from heredoc to echo statements for more reliable JSON output
   - Made regex patterns more flexible for different rsync output formats
   - Simplified pgrep pattern from `rsync.*musicarchive` to `rsync.*music`
+
+- **Progress bar showing stale data** - rsync overwrites progress lines in-place using `\r`, so the latest progress often lacks a trailing newline
+  - Changed from `grep | tail -1` (only captures complete lines) to `tail -c 500 | tr '\r' '\n' | grep | tail -1`
+  - This captures the last 500 bytes, converts all `\r` to `\n`, then extracts the most recent progress
+  - Progress bar now updates every 1.5 seconds with current percentage instead of showing old data
 
 ### Tested On
 - Raspberry Pi 4 Model B running Armbian (tusbm3b)
