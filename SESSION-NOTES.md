@@ -161,3 +161,15 @@
 - CGI script parses last matching line from log file
 - Frontend only polls progress endpoint when music sync is detected from archiveloop.log
 - Backend script changes kept separate from upstream teslausb repo for clean commits
+
+## 2025-12-13 - Music Sync Progress Fix
+
+### Fixed
+- **CGI script carriage return issue** - rsync uses `\r` (carriage return) for in-place progress updates, which was corrupting the JSON output
+  - Added `tr -d '\r'` to strip carriage returns before parsing
+  - Changed from heredoc to echo statements for more reliable JSON output
+  - Made regex patterns more flexible for different rsync output formats
+  - Simplified pgrep pattern from `rsync.*musicarchive` to `rsync.*music`
+
+### Tested On
+- Raspberry Pi 4 Model B running Armbian (tusbm3b)
