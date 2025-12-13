@@ -358,6 +358,20 @@ body {
   color: #b91c1c;
 }
 
+/* UI Switch Links */
+.ui-switch-link {
+  color: #0095f6;
+  text-decoration: none;
+  font-size: 13px;
+  padding: 4px 0;
+  display: block;
+  width: 100%;
+}
+
+.ui-switch-link:hover {
+  text-decoration: underline;
+}
+
 .toggle-btn.danger:hover:not(:disabled) {
   background-color: #fecaca;
   border-color: #ef4444;

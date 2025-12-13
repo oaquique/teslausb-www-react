@@ -8,6 +8,7 @@ import {
   PowerIcon,
   SpeedIcon,
   BluetoothIcon,
+  SwitchIcon,
 } from './Icons';
 import { toggleDrives, reboot, runSpeedTest, startBLEPairing, checkBLEStatus } from '../services/api';
 
@@ -241,6 +242,22 @@ export function Sidebar({ status, computed, config, expanded, onToggle, onRefres
           </div>
         </div>
       )}
+
+      {/* Switch UI */}
+      <div className="device-info">
+        <div className="device-header">
+          <SwitchIcon />
+          <span>Switch UI</span>
+        </div>
+        <div className="info-list">
+          <div className="info-item">
+            <a href="/" className="ui-switch-link">Standard UI</a>
+          </div>
+          <div className="info-item">
+            <a href="/new/" className="ui-switch-link">Vue UI</a>
+          </div>
+        </div>
+      </div>
     </aside>
   );
 }

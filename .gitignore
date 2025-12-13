@@ -22,3 +22,9 @@ npm-debug.log*
 .env
 .env.local
 .env.*.local
+
+# Session notes (local development only)
+SESSION-NOTES.md
+
+# Release artifacts
+teslausb-react-ui.tgz
