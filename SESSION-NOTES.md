@@ -122,3 +122,42 @@
   - Shows band (2.4 GHz, 5 GHz, or 6 GHz) in bold with raw frequency in regular weight
   - Example: **2.4 GHz** (2.412) or **5 GHz** (5.180)
   - Uses `wifi_freq` from status API (already collected by `iwgetid -r -f`)
+
+## 2025-12-12 - Real-time Music Sync Progress
+
+### Added
+- **Real-time progress display during music sync** showing:
+  - Progress bar with percentage
+  - Bytes transferred (formatted: KB/MB/GB)
+  - Transfer speed (e.g., "12.34MB/s")
+  - ETA (e.g., "~1:23 remaining")
+
+### New Files
+- **`backend-scripts/copy-music.sh`** - Modified rsync script with `--info=progress2,stats2`
+  - Kept in local repo to avoid modifying upstream teslausb repository
+  - Outputs real-time progress to `/tmp/rsyncmusiclog.txt`
+- **`cgi-bin/music_sync_progress.sh`** - CGI endpoint that parses rsync progress
+  - Returns JSON: `{ active, bytesTransferred, percentage, speed, eta }`
+  - Detects active sync via `pgrep -f "rsync.*musicarchive"`
+- **`src/hooks/useMusicSyncProgress.js`** - React hook for polling progress
+  - Polls every 1.5 seconds when music sync is active
+  - Includes `formatBytes()` and `formatEta()` utility functions
+
+### Updated Files
+- **`src/components/SyncStatus.jsx`** - Display music sync progress
+  - Shows progress bar with real percentage during music sync
+  - Displays transferred bytes, speed, and ETA below progress bar
+- **`src/components/Dashboard.jsx`** - Integrated music sync progress hook
+  - Detects music sync state from log parsing
+  - Enables progress polling only during active music sync
+- **`src/services/api.js`** - Added `fetchMusicSyncProgress()` function
+- **`src/styles/index.css`** - Added `.sync-progress-main` and `.sync-progress-secondary` styles
+- **`deploy.sh`** - Updated to deploy backend scripts
+  - Now uploads from local `backend-scripts/` directory
+  - Installs to `/root/bin/` on Pi with automatic backup
+
+### Technical Notes
+- rsync `--info=progress2` outputs: `    1,234,567,890  45%   12.34MB/s    0:01:23`
+- CGI script parses last matching line from log file
+- Frontend only polls progress endpoint when music sync is detected from archiveloop.log
+- Backend script changes kept separate from upstream teslausb repo for clean commits
