@@ -60,7 +60,7 @@ fi
 
 # Check if backup exists
 echo -e "${YELLOW}Checking for backup...${NC}"
-BACKUP_EXISTS=$(ssh "$REMOTE_HOST" "[ -f ${BACKUP_PATH}/.backup_marker ] && echo 'yes' || echo 'no'")
+BACKUP_EXISTS=$(ssh -T "$REMOTE_HOST" "[ -f ${BACKUP_PATH}/.backup_marker ] && echo 'yes' || echo 'no'")
 
 if [ "$BACKUP_EXISTS" != "yes" ]; then
     echo -e "${RED}Error: No backup found at ${BACKUP_PATH}${NC}"
@@ -72,7 +72,7 @@ fi
 
 # Show backup info
 echo -e "${GREEN}Backup found!${NC}"
-BACKUP_DATE=$(ssh "$REMOTE_HOST" "cat ${BACKUP_PATH}/.backup_marker 2>/dev/null || echo 'unknown'")
+BACKUP_DATE=$(ssh -T "$REMOTE_HOST" "cat ${BACKUP_PATH}/.backup_marker 2>/dev/null || echo 'unknown'")
 echo "Backup created: $BACKUP_DATE"
 echo ""
 
@@ -90,7 +90,7 @@ echo ""
 echo -e "${YELLOW}Restoring from backup...${NC}"
 echo -e "${CYAN}(Remounting filesystem as read-write)${NC}"
 
-ssh "$REMOTE_HOST" << 'ENDSSH'
+ssh -T "$REMOTE_HOST" << 'ENDSSH'
 set -e
 
 # Function to check if filesystem is read-only
@@ -128,9 +128,9 @@ for item in $BACKUP_PATH/*; do
     sudo cp -r "$item" "$TARGET_PATH/"
 done
 
-# Set permissions
-sudo chown -R www-data:www-data $TARGET_PATH
-sudo chmod -R 755 $TARGET_PATH
+# Set permissions (skip symlinks to avoid errors on FAT/other filesystems)
+sudo find $TARGET_PATH -not -type l -exec chown www-data:www-data {} + 2>/dev/null || true
+sudo find $TARGET_PATH -not -type l -exec chmod 755 {} + 2>/dev/null || true
 
 # Recreate symlinks for log files and diagnostics
 echo "Recreating symlinks..."

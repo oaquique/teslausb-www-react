@@ -95,7 +95,7 @@ fi
 echo -e "${YELLOW}Uploading new UI files to temp directory...${NC}"
 
 # Create temp directory and upload
-ssh "$REMOTE_HOST" "rm -rf /tmp/teslausb-www-new && mkdir -p /tmp/teslausb-www-new"
+ssh -T "$REMOTE_HOST" "rm -rf /tmp/teslausb-www-new && mkdir -p /tmp/teslausb-www-new"
 
 # Use rsync if available, otherwise fall back to scp
 if command -v rsync &> /dev/null; then
@@ -140,7 +140,7 @@ echo ""
 echo -e "${YELLOW}Deploying to ${REMOTE_PATH}...${NC}"
 echo -e "${CYAN}(Remounting filesystem as read-write)${NC}"
 
-ssh "$REMOTE_HOST" << 'ENDSSH'
+ssh -T "$REMOTE_HOST" << 'ENDSSH'
 set -e
 
 # Function to check if filesystem is read-only
@@ -265,9 +265,9 @@ for item in /tmp/teslausb-www-deploy/*; do
     sudo cp -r "$item" "/var/www/html/"
 done
 
-# Set permissions
-sudo chown -R www-data:www-data /var/www/html
-sudo chmod -R 755 /var/www/html
+# Set permissions (skip symlinks to avoid errors on FAT/other filesystems)
+sudo find /var/www/html -not -type l -exec chown www-data:www-data {} + 2>/dev/null || true
+sudo find /var/www/html -not -type l -exec chmod 755 {} + 2>/dev/null || true
 
 # Create symlinks for log files and diagnostics
 echo "Creating log symlinks..."
