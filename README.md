@@ -1,19 +1,59 @@
-# TeslaUSB Modern Web UI
+# TeslaUSB React Web UI
 
-A modern, React-based replacement for the TeslaUSB web interface. Built with Preact for minimal bundle size and optimized for Raspberry Pi.
+A modern, React-based web interface for TeslaUSB. Built with Preact for minimal bundle size and optimized for Raspberry Pi.
 
 ## Features
 
-- **Dashboard** - System status, storage visualization, sync progress, quick actions
+- **Dashboard** - System status, storage visualization, real-time sync progress
 - **Video Viewer** - 6-camera synchronized playback with multiple layout options
 - **File Browser** - Drag-and-drop file management for Music, LightShow, and Boombox drives
-- **Log Viewer** - Real-time log tailing for archive and setup logs, plus diagnostics
+- **Log Viewer** - Real-time log tailing with download option
+- **Music Sync Progress** - Live progress display (percentage, speed, ETA) during music sync
+- **UI Switcher** - Easy switching between Standard, Vue, and React UIs
 
-## Tech Stack
+## Installation
 
-- **Preact** - 3KB React alternative for minimal bundle size
-- **Vite** - Fast build tool with excellent tree-shaking
-- **No external UI framework** - Custom CSS for maximum performance
+### Option 1: TeslaUSB Integration (Recommended)
+
+If TeslaUSB includes this UI, it will be automatically installed at `/react/` during setup. Access it at:
+
+```
+http://<your-pi-ip>/react/
+```
+
+### Option 2: Manual Tarball Installation
+
+Download the latest release and extract to your TeslaUSB:
+
+```bash
+# On your Raspberry Pi
+sudo /root/bin/remountfs_rw
+curl -L -o /tmp/reactui.tgz https://github.com/oaquique/teslausb-www-react/releases/latest/download/teslausb-react-ui.tgz
+sudo tar -C /var/www/html -xf /tmp/reactui.tgz
+```
+
+Then access at `http://<your-pi-ip>/react/`
+
+### Option 3: Full Replacement via Deploy Script
+
+Replace the entire web UI (serves from root `/`):
+
+```bash
+# Build and deploy to your Raspberry Pi
+./deploy.sh pi@192.168.1.100
+```
+
+## Switching Between UIs
+
+TeslaUSB supports multiple web interfaces:
+
+| UI | Path | Description |
+|----|------|-------------|
+| Standard | `/` | Original TeslaUSB interface |
+| Vue | `/new/` | Vue-based alternative |
+| React | `/react/` | This interface |
+
+Use the "Switch UI" section in the sidebar to navigate between them.
 
 ## Development
 
@@ -27,51 +67,15 @@ npm run dev
 # Build for production
 npm run build
 
-# Preview production build
-npm run preview
+# Build release tarball (for /react/ path)
+./build-release.sh
 ```
 
-## Deployment
+## Tech Stack
 
-### Option 1: Using the deploy script (recommended)
-
-The deploy script automatically handles TeslaUSB's read-only filesystem.
-
-```bash
-# Build and deploy to your Raspberry Pi
-./deploy.sh pi@192.168.1.100
-
-# Or using hostname
-./deploy.sh pi@teslausb.local
-```
-
-### Option 2: Manual deployment
-
-TeslaUSB uses a **read-only filesystem** by default. You must remount it as read-write before making changes.
-
-1. Build the project:
-   ```bash
-   npm run build
-   ```
-
-2. SSH into your Raspberry Pi and remount the filesystem:
-   ```bash
-   ssh pi@your-pi-ip
-   sudo -i
-   bin/remountfs_rw
-   ```
-
-3. Copy the `dist/` contents (from another terminal):
-   ```bash
-   scp -r dist/* pi@your-pi-ip:/var/www/html/
-   ```
-
-4. Ensure CGI scripts are preserved - the new UI needs the existing `/var/www/html/cgi-bin/` directory
-
-5. The filesystem will return to read-only on next reboot, or manually:
-   ```bash
-   sudo mount -o remount,ro /
-   ```
+- **Preact** - 3KB React alternative for minimal bundle size
+- **Vite** - Fast build tool with excellent tree-shaking
+- **Custom CSS** - No external UI framework for maximum performance
 
 ## Project Structure
 
@@ -79,68 +83,22 @@ TeslaUSB uses a **read-only filesystem** by default. You must remount it as read
 teslausb-www-react/
 ├── src/
 │   ├── components/      # UI components
-│   │   ├── Dashboard.jsx
-│   │   ├── VideoViewer.jsx
-│   │   ├── FileBrowser.jsx
-│   │   ├── LogViewer.jsx
-│   │   └── ...
-│   ├── hooks/           # Custom hooks
-│   │   ├── useStatus.js
-│   │   └── useLogTail.js
+│   ├── hooks/           # Custom React hooks
 │   ├── services/        # API layer
-│   │   └── api.js
-│   ├── styles/          # CSS
-│   │   └── index.css
-│   ├── App.jsx          # Main app component
-│   └── main.jsx         # Entry point
+│   └── styles/          # CSS
+├── cgi-bin/             # CGI scripts for this UI
 ├── public/              # Static assets
-│   ├── fonts/           # Lato font files (for offline use)
-│   ├── icons/           # PWA icons
-│   └── manifest.json    # PWA manifest
-├── deploy.sh            # Deployment script
-└── vite.config.js       # Vite configuration
+├── deploy.sh            # Full deployment script
+├── rollback.sh          # Restore previous UI
+└── build-release.sh     # Create release tarball
 ```
 
-## Offline Font Support
+## Rollback
 
-The UI uses the Lato font family. When internet is available, fonts load from Google Fonts CDN. For offline use (typical in a car), place the following font files in `public/fonts/`:
-
-- `lato-regular.woff2`
-- `lato-bold.woff2`
-- `lato-italic.woff2`
-
-You can download these from [Google Fonts](https://fonts.google.com/specimen/Lato).
-
-## API Endpoints
-
-The UI communicates with the existing TeslaUSB CGI scripts:
-
-| Endpoint | Description |
-|----------|-------------|
-| `/cgi-bin/status.sh` | System status (CPU temp, disk space, etc.) |
-| `/cgi-bin/config.sh` | Feature configuration |
-| `/cgi-bin/videolist.sh` | List of recorded videos |
-| `/cgi-bin/trigger_sync.sh` | Trigger archive sync |
-| `/cgi-bin/toggledrives.sh` | Connect/disconnect USB drives |
-| `/cgi-bin/ls.sh` | Directory listing |
-| `/cgi-bin/upload.sh` | File upload |
-| `/cgi-bin/download.sh` | File download |
-
-## Browser Support
-
-- Chrome/Edge (recommended)
-- Safari
-- Firefox
-- Mobile browsers (iOS Safari, Chrome for Android)
-
-## Restoring the Original UI
-
-If you need to restore the original TeslaUSB UI:
+If deployed via `deploy.sh`, you can restore the previous UI:
 
 ```bash
-# On your Raspberry Pi
-sudo rm -rf /var/www/html
-sudo mv /var/www/html.backup /var/www/html
+./rollback.sh pi@192.168.1.100
 ```
 
 ## License
