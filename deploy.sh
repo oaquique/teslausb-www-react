@@ -238,6 +238,22 @@ fi
 # (TeslaCam, Music, etc. are symlinks to mounted filesystems)
 echo "Deploying new UI..."
 
+# Create backup of current UI (excluding symlinks to mounted filesystems)
+if [ -d "/var/www/html" ]; then
+    echo "Creating backup of current UI..."
+    sudo rm -rf /var/www/html.backup 2>/dev/null || true
+    sudo mkdir -p /var/www/html.backup
+    # Copy only non-symlink items
+    for item in /var/www/html/*; do
+        if [ ! -L "$item" ]; then
+            sudo cp -r "$item" /var/www/html.backup/ 2>/dev/null || true
+        fi
+    done
+    # Mark this as a valid backup with timestamp
+    date > /tmp/backup_marker && sudo mv /tmp/backup_marker /var/www/html.backup/.backup_marker
+    echo "Backup created at /var/www/html.backup"
+fi
+
 # Copy only regular files, not symlinks, to avoid issues with mounted filesystems
 for item in /tmp/teslausb-www-deploy/*; do
     name=$(basename "$item")
@@ -299,4 +315,7 @@ echo ""
 echo -e "${CYAN}Note: The filesystem is currently read-write.${NC}"
 echo "It will return to read-only on next reboot, or you can run:"
 echo "  ssh ${REMOTE_HOST} 'sudo mount -o remount,ro /'"
+echo ""
+echo "To rollback to the previous UI version, run:"
+echo -e "  ${YELLOW}./rollback.sh ${REMOTE_HOST}${NC}"
 echo ""

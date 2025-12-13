@@ -1134,6 +1134,29 @@ body {
   gap: 8px;
 }
 
+.log-action-btn {
+  background: #4a4a4a !important;
+  border-color: #666 !important;
+  color: #e0e0e0 !important;
+}
+
+.log-action-btn svg {
+  color: #e0e0e0 !important;
+}
+
+.log-action-btn:hover:not(:disabled) {
+  background: #5a5a5a !important;
+  border-color: #888 !important;
+}
+
+.log-action-btn:hover:not(:disabled) svg {
+  color: #ffffff !important;
+}
+
+.log-action-btn:disabled {
+  opacity: 0.4;
+}
+
 .log-viewer-content {
   flex: 1;
   overflow-y: auto;

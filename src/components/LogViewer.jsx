@@ -147,10 +147,9 @@ export function LogViewer() {
           <div className="log-viewer-actions">
             {activeLog === 'diagnostics' ? (
               <button
-                className="btn btn-sm"
+                className="btn btn-sm log-action-btn"
                 onClick={handleGenerateDiagnostics}
                 disabled={diagnosticsLoading}
-                style={{ background: '#333', borderColor: '#444' }}
               >
                 <RefreshIcon className={diagnosticsLoading ? 'spinning' : ''} />
                 <span>Regenerate</span>
@@ -158,27 +157,27 @@ export function LogViewer() {
             ) : (
               <>
                 <button
-                  className="btn btn-sm"
+                  className="btn btn-sm log-action-btn"
                   onClick={refresh}
                   disabled={loading}
-                  style={{ background: '#333', borderColor: '#444' }}
+                  title="Refresh"
                 >
                   <RefreshIcon className={loading ? 'spinning' : ''} />
                 </button>
                 <button
-                  className="btn btn-sm"
+                  className="btn btn-sm log-action-btn"
                   onClick={clear}
-                  style={{ background: '#333', borderColor: '#444' }}
+                  title="Clear"
                 >
                   <TrashIcon />
                 </button>
               </>
             )}
             <button
-              className="btn btn-sm"
+              className="btn btn-sm log-action-btn"
               onClick={handleDownload}
               disabled={displayLines.length === 0}
-              style={{ background: '#333', borderColor: '#444' }}
+              title="Download"
             >
               <DownloadIcon />
             </button>

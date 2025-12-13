@@ -176,5 +176,17 @@
   - This captures the last 500 bytes, converts all `\r` to `\n`, then extracts the most recent progress
   - Progress bar now updates every 1.5 seconds with current percentage instead of showing old data
 
+### Added
+- **Rollback system** for reverting to previous UI version
+  - `deploy.sh` now creates a backup at `/var/www/html.backup` before each deploy
+  - New `rollback.sh` script to restore from backup with confirmation prompt
+  - Backup includes timestamp marker for tracking when it was created
+
+### UI Improvements
+- **Log viewer action buttons** - Made buttons more visible on dark header
+  - Changed button background from `#333` to `#4a4a4a` with lighter border
+  - Fixed SVG icon colors (were dark gray `#374151`, now light `#e0e0e0`)
+  - Added hover effects and tooltips (Refresh, Clear, Download)
+
 ### Tested On
 - Raspberry Pi 4 Model B running Armbian (tusbm3b)
