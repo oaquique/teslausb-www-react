@@ -146,6 +146,12 @@ export function Sidebar({ status, computed, config, expanded, onToggle, onRefres
                 <span className="info-label">WiFi SSID</span>
                 <span className="info-value">{status.wifi_ssid}</span>
               </div>
+              {status?.wifi_freq && (
+                <div className="info-item">
+                  <span className="info-label">Frequency</span>
+                  <span className="info-value">{formatWifiFreq(status.wifi_freq)}</span>
+                </div>
+              )}
               <div className="info-item">
                 <span className="info-label">Signal</span>
                 <span className="info-value">{computed?.wifiSignalPercent || 0}%</span>
@@ -262,6 +268,26 @@ function formatSnapshotDate(timestamp) {
   } catch {
     return timestamp;
   }
+}
+
+function formatWifiFreq(freq) {
+  if (!freq) return '-';
+  // iwgetid returns frequency like "2.412 GHz" or just the number
+  const match = freq.match(/(\d+\.?\d*)/);
+  if (match) {
+    const ghz = parseFloat(match[1]);
+    const rawFreq = <span style={{ fontWeight: 'normal' }}> ({ghz.toFixed(3)})</span>;
+    // Show band label (2.4 or 5 GHz) with actual frequency
+    if (ghz >= 2.4 && ghz < 2.5) {
+      return <>2.4 GHz{rawFreq}</>;
+    } else if (ghz >= 5 && ghz < 6) {
+      return <>5 GHz{rawFreq}</>;
+    } else if (ghz >= 6) {
+      return <>6 GHz{rawFreq}</>;
+    }
+    return `${ghz} GHz`;
+  }
+  return freq;
 }
 
 export default Sidebar;

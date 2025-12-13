@@ -114,3 +114,11 @@
 - Raspberry Pi 4 Model B (tusbm3b)
 - Raspberry Pi 5 Model B (tusbm3a)
 - Radxa ROCK Pi 4C+ (tusbm3e)
+
+## 2025-12-12 - WiFi Frequency Display
+
+### Updated Components
+- **`Sidebar.jsx`** - Added WiFi frequency display in Network section
+  - Shows band (2.4 GHz, 5 GHz, or 6 GHz) in bold with raw frequency in regular weight
+  - Example: **2.4 GHz** (2.412) or **5 GHz** (5.180)
+  - Uses `wifi_freq` from status API (already collected by `iwgetid -r -f`)
