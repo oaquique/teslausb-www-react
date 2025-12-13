@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'preact/hooks';
+import { useState, useCallback, useMemo } from 'preact/hooks';
 import { useLogTail, parseSyncStatus } from '../hooks/useLogTail';
+import { useMusicSyncProgress } from '../hooks/useMusicSyncProgress';
 import { triggerSync } from '../services/api';
 import {
   CameraIcon,
@@ -16,6 +17,15 @@ export function Dashboard({ status, computed, config, storage, onRefresh }) {
   // Tail archiveloop log for sync status
   const { lines: logLines } = useLogTail('archiveloop.log', 3000, true);
   const syncStatus = parseSyncStatus(logLines);
+
+  // Check if music sync is active (for enabling progress polling)
+  const isMusicSyncActive = useMemo(() => {
+    return syncStatus.state === 'archiving' &&
+           syncStatus.message?.toLowerCase().includes('music');
+  }, [syncStatus.state, syncStatus.message]);
+
+  // Poll music sync progress when music sync is active
+  const musicProgress = useMusicSyncProgress(isMusicSyncActive, 1500);
 
   const handleTriggerSync = useCallback(async () => {
     setSyncLoading(true);
@@ -78,6 +88,7 @@ export function Dashboard({ status, computed, config, storage, onRefresh }) {
           syncStatus={syncStatus}
           onTriggerSync={handleTriggerSync}
           loading={syncLoading}
+          musicProgress={musicProgress}
         />
       </div>
     </div>

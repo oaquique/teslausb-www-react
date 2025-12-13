@@ -1078,9 +1078,19 @@ body {
 
 .sync-details {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 2px;
   font-size: 11px;
   color: #6b7280;
+}
+
+.sync-progress-main {
+  font-weight: 500;
+}
+
+.sync-progress-secondary {
+  font-size: 10px;
+  color: #9ca3af;
 }
 
 .sync-file {

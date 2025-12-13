@@ -1,10 +1,15 @@
 import { SyncIcon, CheckIcon, AlertIcon, ClockIcon } from './Icons';
+import { formatBytes, formatEta } from '../hooks/useMusicSyncProgress';
 
 /**
  * Compact Sync Status Card
  */
-export function SyncStatus({ syncStatus, onTriggerSync, loading }) {
+export function SyncStatus({ syncStatus, onTriggerSync, loading, musicProgress }) {
   const { state, totalFiles, archivedFiles, message, elapsedTime, lastActivity } = syncStatus;
+
+  // Check if this is an active music sync with progress data
+  const isMusicSync = message?.toLowerCase().includes('music') && state === 'archiving';
+  const hasMusicProgress = musicProgress?.active && musicProgress?.percentage > 0;
 
   const getStateInfo = () => {
     switch (state) {
@@ -25,10 +30,18 @@ export function SyncStatus({ syncStatus, onTriggerSync, loading }) {
 
   const stateInfo = getStateInfo();
   const isActive = state === 'archiving' || state === 'connecting';
-  const showProgress = state === 'archiving' && totalFiles > 0;
-  const progressPercent = showProgress && archivedFiles > 0
-    ? Math.min(Math.round((archivedFiles / totalFiles) * 100), 100)
-    : null;
+
+  // Determine which progress to show
+  const showMusicProgress = isMusicSync && hasMusicProgress;
+  const showFileProgress = state === 'archiving' && totalFiles > 0 && !showMusicProgress;
+
+  // Calculate progress percentage
+  let progressPercent = null;
+  if (showMusicProgress) {
+    progressPercent = musicProgress.percentage;
+  } else if (showFileProgress && archivedFiles > 0) {
+    progressPercent = Math.min(Math.round((archivedFiles / totalFiles) * 100), 100);
+  }
 
   const formatLastActivity = (date) => {
     if (!date) return null;
@@ -55,7 +68,7 @@ export function SyncStatus({ syncStatus, onTriggerSync, loading }) {
       </div>
 
       {/* Progress bar - shown during archiving */}
-      {(showProgress || isActive) && (
+      {(showMusicProgress || showFileProgress || isActive) && (
         <div className="sync-progress-bar">
           <div
             className="sync-progress-fill"
@@ -68,8 +81,25 @@ export function SyncStatus({ syncStatus, onTriggerSync, loading }) {
         </div>
       )}
 
-      {/* Progress details */}
-      {showProgress && (
+      {/* Music sync progress details */}
+      {showMusicProgress && (
+        <div className="sync-details">
+          <div className="sync-progress-main">
+            {formatBytes(musicProgress.bytesTransferred)} transferred
+            {progressPercent !== null && ` (${progressPercent}%)`}
+          </div>
+          {(musicProgress.speed || musicProgress.eta) && (
+            <div className="sync-progress-secondary">
+              {musicProgress.speed && <span>{musicProgress.speed}</span>}
+              {musicProgress.speed && musicProgress.eta && <span> · </span>}
+              {musicProgress.eta && <span>{formatEta(musicProgress.eta)}</span>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* File progress details (for TeslaCam archiving) */}
+      {showFileProgress && (
         <div className="sync-details">
           {archivedFiles} / {totalFiles} files
           {progressPercent !== null && ` (${progressPercent}%)`}
@@ -77,7 +107,7 @@ export function SyncStatus({ syncStatus, onTriggerSync, loading }) {
       )}
 
       {/* Last activity for idle state */}
-      {!isActive && !showProgress && lastActivity && (
+      {!isActive && !showFileProgress && !showMusicProgress && lastActivity && (
         <div className="sync-details">
           Last sync: {formatLastActivity(lastActivity)}
         </div>

@@ -243,6 +243,16 @@ export async function triggerSync() {
 }
 
 /**
+ * Fetch music sync progress
+ * @returns {Promise<Object>} Progress object with active, bytesTransferred, percentage, speed, eta
+ */
+export async function fetchMusicSyncProgress() {
+  const response = await fetch(`${API_BASE}/music_sync_progress.sh`);
+  if (!response.ok) throw new Error('Failed to fetch music sync progress');
+  return response.json();
+}
+
+/**
  * Toggle USB drives visibility
  * @returns {Promise<void>}
  */

@@ -115,6 +115,15 @@ if [ -d "$LOCAL_CGI" ]; then
         scp -r "$LOCAL_CGI"/* "${REMOTE_HOST}:/tmp/teslausb-cgi-local/"
 fi
 
+# Upload backend scripts (copy-music.sh, etc.) from local backend-scripts directory
+BACKEND_SCRIPTS="$SCRIPT_DIR/backend-scripts"
+if [ -d "$BACKEND_SCRIPTS" ]; then
+    echo -e "${YELLOW}Uploading backend scripts...${NC}"
+    ssh "$REMOTE_HOST" "mkdir -p /tmp/teslausb-backend"
+    rsync -avz "$BACKEND_SCRIPTS/" "${REMOTE_HOST}:/tmp/teslausb-backend/" 2>/dev/null || \
+        scp -r "$BACKEND_SCRIPTS"/* "${REMOTE_HOST}:/tmp/teslausb-backend/"
+fi
+
 # Also upload cgi-bin from the teslausb-www source as fallback
 CGI_SRC="$SCRIPT_DIR/../teslausb-www/html/cgi-bin"
 if [ -d "$CGI_SRC" ]; then
@@ -171,6 +180,23 @@ if [ -d "/tmp/teslausb-cgi-local" ]; then
     sudo mkdir -p /tmp/teslausb-www-deploy/cgi-bin
     sudo cp -r /tmp/teslausb-cgi-local/* /tmp/teslausb-www-deploy/cgi-bin/
     sudo chmod +x /tmp/teslausb-www-deploy/cgi-bin/*.sh
+fi
+
+# Install backend scripts to /root/bin/
+if [ -d "/tmp/teslausb-backend" ]; then
+    echo "Installing backend scripts to /root/bin/..."
+    for script in /tmp/teslausb-backend/*.sh; do
+        if [ -f "$script" ]; then
+            name=$(basename "$script")
+            # Backup existing script if it exists
+            if [ -f "/root/bin/$name" ]; then
+                sudo cp "/root/bin/$name" "/root/bin/${name}.bak"
+            fi
+            sudo cp "$script" "/root/bin/$name"
+            sudo chmod +x "/root/bin/$name"
+            echo "  Installed $name"
+        fi
+    done
 fi
 
 # Preserve fancyindex CSS for TeslaCam directory listing
@@ -253,6 +279,7 @@ sudo rm -rf /tmp/teslausb-www-new
 sudo rm -rf /tmp/teslausb-cgi-bin 2>/dev/null || true
 sudo rm -rf /tmp/teslausb-cgi-local 2>/dev/null || true
 sudo rm -rf /tmp/teslausb-www-deploy 2>/dev/null || true
+sudo rm -rf /tmp/teslausb-backend 2>/dev/null || true
 
 echo ""
 echo "Deployment complete!"
