@@ -314,6 +314,23 @@ export async function fetchDiagnostics() {
  * @returns {Promise<Object>} { content, size, truncated }
  */
 export async function fetchLog(logFile, lastSize = 0) {
+  // Use HEAD request first to check file size and avoid 416 errors
+  if (lastSize > 0) {
+    const headResponse = await fetch(`/${logFile}`, { method: 'HEAD' });
+    if (headResponse.ok) {
+      const contentLength = parseInt(headResponse.headers.get('Content-Length') || '0', 10);
+      if (contentLength <= lastSize) {
+        // No new content or file was truncated
+        if (contentLength < lastSize) {
+          // File was truncated, return truncated flag to trigger full reload
+          return { content: '', size: 0, truncated: true };
+        }
+        // No new content
+        return { content: '', size: lastSize, truncated: false };
+      }
+    }
+  }
+
   const headers = {};
   if (lastSize > 0) {
     headers['Range'] = `bytes=${lastSize}-`;
@@ -322,7 +339,7 @@ export async function fetchLog(logFile, lastSize = 0) {
   const response = await fetch(`/${logFile}`, { headers });
 
   if (response.status === 416) {
-    // Range not satisfiable - log was truncated or no new content
+    // Range not satisfiable - shouldn't happen now but handle just in case
     return { content: '', size: lastSize, truncated: false };
   }
 

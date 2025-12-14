@@ -16,7 +16,6 @@ export default defineConfig({
       },
     },
   },
-  // Base path for deployment
-  // Set VITE_BASE_PATH=/react/ for tarball releases, defaults to / for deploy.sh
-  base: process.env.VITE_BASE_PATH || '/',
+  // Base path for deployment - use relative paths by default for flexibility
+  base: './',
 });
