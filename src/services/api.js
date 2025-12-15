@@ -253,6 +253,16 @@ export async function fetchMusicSyncProgress() {
 }
 
 /**
+ * Fetch TeslaCam archive progress
+ * @returns {Promise<Object>} Progress object with active, bytesTransferred, percentage, speed, eta, filesDone, filesTotal
+ */
+export async function fetchCamSyncProgress() {
+  const response = await fetch(`${API_BASE}/cam_sync_progress.sh`);
+  if (!response.ok) throw new Error('Failed to fetch cam sync progress');
+  return response.json();
+}
+
+/**
  * Toggle USB drives visibility
  * @returns {Promise<void>}
  */

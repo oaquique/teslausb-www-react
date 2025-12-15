@@ -4,12 +4,16 @@ import { formatBytes, formatEta } from '../hooks/useMusicSyncProgress';
 /**
  * Compact Sync Status Card
  */
-export function SyncStatus({ syncStatus, onTriggerSync, loading, musicProgress }) {
-  const { state, totalFiles, archivedFiles, message, elapsedTime, lastActivity } = syncStatus;
+export function SyncStatus({ syncStatus, onTriggerSync, loading, musicProgress, camProgress }) {
+  const { state, message, elapsedTime, lastActivity } = syncStatus;
 
-  // Check if this is an active music sync with progress data
+  // Determine sync type based on message
   const isMusicSync = message?.toLowerCase().includes('music') && state === 'archiving';
-  const hasMusicProgress = musicProgress?.active && musicProgress?.percentage > 0;
+  const isCamSync = state === 'archiving' && !isMusicSync;
+
+  // Check if we have active progress data from the respective APIs
+  const hasMusicProgress = musicProgress?.active;
+  const hasCamProgress = camProgress?.active;
 
   const getStateInfo = () => {
     switch (state) {
@@ -31,16 +35,39 @@ export function SyncStatus({ syncStatus, onTriggerSync, loading, musicProgress }
   const stateInfo = getStateInfo();
   const isActive = state === 'archiving' || state === 'connecting';
 
-  // Determine which progress to show
+  // Determine which progress source to use
   const showMusicProgress = isMusicSync && hasMusicProgress;
-  const showFileProgress = state === 'archiving' && totalFiles > 0 && !showMusicProgress;
+  const showCamProgress = isCamSync && hasCamProgress;
+  const showAnyProgress = showMusicProgress || showCamProgress;
 
-  // Calculate progress percentage
+  // Calculate progress percentage from the active source
   let progressPercent = null;
-  if (showMusicProgress) {
+  let progressDetails = null;
+
+  if (showMusicProgress && musicProgress.percentage > 0) {
     progressPercent = musicProgress.percentage;
-  } else if (showFileProgress && archivedFiles > 0) {
-    progressPercent = Math.min(Math.round((archivedFiles / totalFiles) * 100), 100);
+    progressDetails = {
+      type: 'music',
+      bytesTransferred: musicProgress.bytesTransferred,
+      speed: musicProgress.speed,
+      eta: musicProgress.eta,
+    };
+  } else if (showCamProgress) {
+    // Use percentage if available, otherwise calculate from files
+    if (camProgress.percentage > 0) {
+      progressPercent = camProgress.percentage;
+    } else if (camProgress.filesTotal > 0 && camProgress.filesDone > 0) {
+      progressPercent = Math.min(Math.round((camProgress.filesDone / camProgress.filesTotal) * 100), 100);
+    }
+    progressDetails = {
+      type: 'cam',
+      bytesTransferred: camProgress.bytesTransferred,
+      speed: camProgress.speed,
+      eta: camProgress.eta,
+      filesDone: camProgress.filesDone,
+      filesTotal: camProgress.filesTotal,
+      currentFile: camProgress.currentFile,
+    };
   }
 
   const formatLastActivity = (date) => {
@@ -68,7 +95,7 @@ export function SyncStatus({ syncStatus, onTriggerSync, loading, musicProgress }
       </div>
 
       {/* Progress bar - shown during archiving */}
-      {(showMusicProgress || showFileProgress || isActive) && (
+      {isActive && (
         <div className="sync-progress-bar">
           <div
             className="sync-progress-fill"
@@ -81,33 +108,56 @@ export function SyncStatus({ syncStatus, onTriggerSync, loading, musicProgress }
         </div>
       )}
 
-      {/* Music sync progress details */}
-      {showMusicProgress && (
+      {/* Progress details - consistent format for both sync types */}
+      {isActive && progressDetails && (
         <div className="sync-details">
+          {/* Primary progress line */}
           <div className="sync-progress-main">
-            {formatBytes(musicProgress.bytesTransferred)} transferred
-            {progressPercent !== null && ` (${progressPercent}%)`}
+            {progressDetails.type === 'music' ? (
+              <>
+                {formatBytes(progressDetails.bytesTransferred)} transferred
+                {progressPercent !== null && ` (${progressPercent}%)`}
+              </>
+            ) : (
+              <>
+                {progressDetails.bytesTransferred > 0 ? (
+                  <>
+                    {formatBytes(progressDetails.bytesTransferred)} transferred
+                    {progressPercent !== null && ` (${progressPercent}%)`}
+                  </>
+                ) : progressDetails.filesTotal > 0 ? (
+                  <>
+                    {progressDetails.filesDone} / {progressDetails.filesTotal} files
+                    {progressPercent !== null && ` (${progressPercent}%)`}
+                  </>
+                ) : (
+                  'Archiving...'
+                )}
+              </>
+            )}
           </div>
-          {(musicProgress.speed || musicProgress.eta) && (
+          {/* Secondary line with speed and ETA */}
+          {(progressDetails.speed || progressDetails.eta) && (
             <div className="sync-progress-secondary">
-              {musicProgress.speed && <span>{musicProgress.speed}</span>}
-              {musicProgress.speed && musicProgress.eta && <span> · </span>}
-              {musicProgress.eta && <span>{formatEta(musicProgress.eta)}</span>}
+              {progressDetails.speed && <span>{progressDetails.speed}</span>}
+              {progressDetails.speed && progressDetails.eta && <span> · </span>}
+              {progressDetails.eta && <span>{formatEta(progressDetails.eta)}</span>}
             </div>
           )}
         </div>
       )}
 
-      {/* File progress details (for TeslaCam archiving) */}
-      {showFileProgress && (
+      {/* Indeterminate progress message when archiving but no progress data yet */}
+      {isActive && !progressDetails && state === 'archiving' && (
         <div className="sync-details">
-          {archivedFiles} / {totalFiles} files
-          {progressPercent !== null && ` (${progressPercent}%)`}
+          <div className="sync-progress-main">
+            Preparing...
+          </div>
         </div>
       )}
 
       {/* Last activity for idle state */}
-      {!isActive && !showFileProgress && !showMusicProgress && lastActivity && (
+      {!isActive && lastActivity && (
         <div className="sync-details">
           Last sync: {formatLastActivity(lastActivity)}
         </div>

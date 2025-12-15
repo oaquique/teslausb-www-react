@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'preact/hooks';
 import { useLogTail, parseSyncStatus } from '../hooks/useLogTail';
-import { useMusicSyncProgress } from '../hooks/useMusicSyncProgress';
+import { useMusicSyncProgress, useCamSyncProgress } from '../hooks/useMusicSyncProgress';
 import { triggerSync } from '../services/api';
 import {
   CameraIcon,
@@ -24,8 +24,17 @@ export function Dashboard({ status, computed, config, storage, onRefresh }) {
            syncStatus.message?.toLowerCase().includes('music');
   }, [syncStatus.state, syncStatus.message]);
 
+  // Check if CAM archiving is active (for enabling progress polling)
+  const isCamSyncActive = useMemo(() => {
+    return syncStatus.state === 'archiving' &&
+           !syncStatus.message?.toLowerCase().includes('music');
+  }, [syncStatus.state, syncStatus.message]);
+
   // Poll music sync progress when music sync is active
   const musicProgress = useMusicSyncProgress(isMusicSyncActive, 1500);
+
+  // Poll CAM sync progress when CAM archiving is active
+  const camProgress = useCamSyncProgress(isCamSyncActive, 1500);
 
   const handleTriggerSync = useCallback(async () => {
     setSyncLoading(true);
@@ -89,6 +98,7 @@ export function Dashboard({ status, computed, config, storage, onRefresh }) {
           onTriggerSync={handleTriggerSync}
           loading={syncLoading}
           musicProgress={musicProgress}
+          camProgress={camProgress}
         />
       </div>
     </div>

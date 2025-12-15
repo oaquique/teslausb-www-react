@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
-import { fetchMusicSyncProgress } from '../services/api';
+import { fetchMusicSyncProgress, fetchCamSyncProgress } from '../services/api';
 
 /**
  * Hook for polling music sync progress
@@ -95,6 +95,80 @@ export function formatEta(eta) {
   // Remove leading zeros from hours if present
   const cleaned = eta.replace(/^0:/, '');
   return `~${cleaned} remaining`;
+}
+
+/**
+ * Hook for polling TeslaCam archive progress
+ * @param {boolean} enabled - Whether to enable polling (should be true when cam archiving is active)
+ * @param {number} pollInterval - Polling interval in ms (default 1500)
+ * @returns {Object} Cam sync progress data
+ */
+export function useCamSyncProgress(enabled = false, pollInterval = 1500) {
+  const [progress, setProgress] = useState({
+    active: false,
+    bytesTransferred: 0,
+    percentage: 0,
+    speed: '',
+    eta: '',
+    filesDone: 0,
+    filesTotal: 0,
+    currentFile: '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const enabledRef = useRef(enabled);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await fetchCamSyncProgress();
+      setProgress(data);
+      setError(null);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Update ref when enabled changes
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled) {
+      // Reset progress when disabled
+      setProgress({
+        active: false,
+        bytesTransferred: 0,
+        percentage: 0,
+        speed: '',
+        eta: '',
+        filesDone: 0,
+        filesTotal: 0,
+        currentFile: '',
+      });
+      return;
+    }
+
+    setLoading(true);
+    refresh(); // Initial fetch
+
+    const interval = setInterval(() => {
+      if (enabledRef.current) {
+        refresh();
+      }
+    }, pollInterval);
+
+    return () => clearInterval(interval);
+  }, [enabled, pollInterval, refresh]);
+
+  return {
+    ...progress,
+    loading,
+    error,
+    refresh,
+  };
 }
 
 export default useMusicSyncProgress;
