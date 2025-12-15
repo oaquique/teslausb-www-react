@@ -876,6 +876,26 @@ body {
   border-color: #b91c1c;
 }
 
+.btn-dark {
+  background: #333;
+  border-color: #444;
+  color: #fff;
+}
+
+.btn-dark svg {
+  color: #fff;
+}
+
+.btn-dark:hover:not(:disabled) {
+  background: #444;
+  border-color: #555;
+  color: #fff;
+}
+
+.btn-dark:hover:not(:disabled) svg {
+  color: #fff;
+}
+
 .btn-sm {
   padding: 4px 8px;
   font-size: 12px;
@@ -1323,6 +1343,11 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: background 0.15s;
+}
+
+.video-play-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .video-play-btn:hover {
@@ -1976,7 +2001,9 @@ body {
 
   /* Log viewer mobile */
   .log-viewer {
-    height: 300px;
+    height: auto;
+    min-height: 300px;
+    flex: 1;
   }
 
   .log-viewer-content {

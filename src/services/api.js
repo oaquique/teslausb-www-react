@@ -294,7 +294,10 @@ export async function checkBLEStatus() {
  * @returns {Promise<void>}
  */
 export async function generateDiagnostics() {
-  await fetch(`${API_BASE}/diagnose.sh`);
+  const response = await fetch(`${API_BASE}/diagnose.sh`);
+  // Wait for the response body to ensure the script completes
+  await response.text();
+  if (!response.ok) throw new Error('Failed to generate diagnostics');
 }
 
 /**

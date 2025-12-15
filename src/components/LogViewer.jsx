@@ -58,10 +58,9 @@ export function LogViewer() {
   // Generate and load diagnostics
   const handleGenerateDiagnostics = useCallback(async () => {
     setDiagnosticsLoading(true);
+    setDiagnosticsContent(null);
     try {
       await generateDiagnostics();
-      // Wait a moment for file to be generated
-      await new Promise(r => setTimeout(r, 2000));
       const content = await fetchDiagnostics();
       setDiagnosticsContent(content);
     } catch (e) {

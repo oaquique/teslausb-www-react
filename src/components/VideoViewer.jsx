@@ -38,6 +38,7 @@ export function VideoViewer() {
   // Playback state
   const [selectedCategory, setSelectedCategory] = useState('SentryClips');
   const [selectedSequence, setSelectedSequence] = useState(null);
+  const [selectedTimestamp, setSelectedTimestamp] = useState(null); // For RecentClips time selection
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -49,6 +50,7 @@ export function VideoViewer() {
 
   // Video refs for synchronized playback
   const videoRefs = useRef({});
+  const masterCamera = useRef(null);
 
   // Load video list
   useEffect(() => {
@@ -79,12 +81,46 @@ export function VideoViewer() {
 
   // Load event data when sequence changes
   useEffect(() => {
+    // Reset master camera when sequence changes
+    masterCamera.current = null;
+    setCurrentTime(0);
+    setDuration(0);
+
     if (selectedCategory === 'SentryClips' && selectedSequence) {
       fetchEventData(selectedSequence).then(setEventData);
     } else {
       setEventData(null);
     }
   }, [selectedCategory, selectedSequence]);
+
+  // Extract unique timestamps from files (for all clip types with multiple timestamps)
+  const getTimestamps = useCallback(() => {
+    if (!videoList || !selectedSequence) return [];
+
+    const files = videoList[selectedCategory]?.[selectedSequence] || [];
+    const timestamps = new Set();
+
+    for (const file of files) {
+      // Extract timestamp: 2025-12-14_14-15-05-front.mp4 -> 2025-12-14_14-15-05
+      const match = file.match(/(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})/);
+      if (match) {
+        timestamps.add(match[1]);
+      }
+    }
+
+    // Only show time selector if there's more than one timestamp
+    const result = Array.from(timestamps).sort().reverse();
+    return result.length > 1 ? result : [];
+  }, [videoList, selectedCategory, selectedSequence]);
+
+  const timestamps = getTimestamps();
+
+  // Auto-select most recent timestamp when timestamps change
+  useEffect(() => {
+    if (timestamps.length > 0 && !selectedTimestamp) {
+      setSelectedTimestamp(timestamps[0]);
+    }
+  }, [timestamps, selectedTimestamp]);
 
   // Get video files for current sequence
   const getVideoFiles = useCallback(() => {
@@ -93,7 +129,15 @@ export function VideoViewer() {
     const files = videoList[selectedCategory]?.[selectedSequence] || [];
     const result = {};
 
+    // Only filter by timestamp when there are multiple timestamps to choose from
+    const filterTimestamp = timestamps.length > 0 ? selectedTimestamp : null;
+
     for (const file of files) {
+      // If filtering by timestamp, skip files that don't match
+      if (filterTimestamp && !file.startsWith(filterTimestamp)) {
+        continue;
+      }
+
       // Extract camera from filename: 2025-01-15_12-30-45-front.mp4
       for (const camera of Object.keys(CAMERAS)) {
         if (file.includes(`-${camera}.mp4`) || file.includes(`_${camera}.mp4`)) {
@@ -104,7 +148,7 @@ export function VideoViewer() {
     }
 
     return result;
-  }, [videoList, selectedCategory, selectedSequence]);
+  }, [videoList, selectedCategory, selectedSequence, selectedTimestamp, timestamps]);
 
   const videoFiles = getVideoFiles();
 
@@ -138,14 +182,25 @@ export function VideoViewer() {
     seekAll(Math.min(duration, currentTime + 30));
   }, [currentTime, duration, seekAll]);
 
-  // Handle time updates from videos
-  const handleTimeUpdate = useCallback((e) => {
-    setCurrentTime(e.target.currentTime);
+  // Handle time updates from videos - only use master camera to avoid jumping
+  const handleTimeUpdate = useCallback((camera) => (e) => {
+    if (camera === masterCamera.current) {
+      setCurrentTime(e.target.currentTime);
+    }
   }, []);
 
-  const handleDurationChange = useCallback((e) => {
-    if (e.target.duration && e.target.duration !== Infinity) {
-      setDuration(e.target.duration);
+  const handleDurationChange = useCallback((camera) => (e) => {
+    const dur = e.target.duration;
+    // Only accept valid, finite durations
+    if (dur && dur !== Infinity && !isNaN(dur)) {
+      // Set master camera when we first get a valid duration
+      if (!masterCamera.current) {
+        masterCamera.current = camera;
+      }
+      // Only update duration from master camera
+      if (camera === masterCamera.current) {
+        setDuration(dur);
+      }
     }
   }, []);
 
@@ -187,17 +242,11 @@ export function VideoViewer() {
     );
   }
 
-  if (!selectedSequence || Object.keys(videoFiles).length === 0) {
-    return (
-      <div className="video-viewer" style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <span className="text-muted">No recordings available</span>
-      </div>
-    );
-  }
+  const hasVideos = selectedSequence && Object.keys(videoFiles).length > 0;
 
   return (
     <div className="video-viewer">
-      {/* Clip selector bar */}
+      {/* Clip selector bar - always visible so users can switch categories */}
       <div className="video-selector" style={{
         display: 'flex',
         gap: '0.5rem',
@@ -214,6 +263,7 @@ export function VideoViewer() {
             setSelectedCategory(e.target.value);
             const seqs = Object.keys(videoList[e.target.value] || {});
             setSelectedSequence(seqs[0] || null);
+            setSelectedTimestamp(null); // Reset timestamp when category changes
           }}
           style={{
             background: '#333',
@@ -232,7 +282,10 @@ export function VideoViewer() {
         {/* Sequence selector */}
         <select
           value={selectedSequence || ''}
-          onChange={(e) => setSelectedSequence(e.target.value)}
+          onChange={(e) => {
+            setSelectedSequence(e.target.value);
+            setSelectedTimestamp(null); // Reset timestamp when date changes
+          }}
           style={{
             background: '#333',
             color: '#fff',
@@ -241,7 +294,7 @@ export function VideoViewer() {
             padding: '6px 10px',
             fontSize: '13px',
             flex: 1,
-            maxWidth: '250px',
+            maxWidth: '180px',
           }}
         >
           {sequences.map(seq => (
@@ -249,12 +302,32 @@ export function VideoViewer() {
           ))}
         </select>
 
+        {/* Timestamp selector (when multiple timestamps exist in a folder) */}
+        {timestamps.length > 0 && (
+          <select
+            value={selectedTimestamp || ''}
+            onChange={(e) => setSelectedTimestamp(e.target.value)}
+            style={{
+              background: '#333',
+              color: '#fff',
+              border: '1px solid #444',
+              borderRadius: '4px',
+              padding: '6px 10px',
+              fontSize: '13px',
+              maxWidth: '120px',
+            }}
+          >
+            {timestamps.map(ts => (
+              <option key={ts} value={ts}>{formatTimestamp(ts)}</option>
+            ))}
+          </select>
+        )}
+
         {/* Layout selector */}
         <div style={{ position: 'relative' }}>
           <button
-            className="btn btn-sm"
+            className="btn btn-sm btn-dark"
             onClick={() => setShowLayoutMenu(!showLayoutMenu)}
-            style={{ background: '#333', borderColor: '#444' }}
           >
             <LayoutIcon />
             <span>{layout.name}</span>
@@ -307,58 +380,74 @@ export function VideoViewer() {
         )}
       </div>
 
-      {/* Video grid */}
-      <div
-        className={`video-grid layout-${layout.cameras.length}`}
-        style={{
-          gridTemplateColumns: `repeat(${layout.cols}, 1fr)`,
-        }}
-      >
-        {layout.cameras.map(camera => (
-          <div key={camera} className="video-cell">
-            {videoFiles[camera] ? (
-              <video
-                ref={el => { videoRefs.current[camera] = el; }}
-                src={videoFiles[camera]}
-                onTimeUpdate={handleTimeUpdate}
-                onDurationChange={handleDurationChange}
-                onEnded={pauseAll}
-                muted
-                playsInline
-              />
-            ) : (
-              <div style={{ color: '#666', fontSize: '12px' }}>No video</div>
-            )}
-            <div className="video-cell-label">{CAMERAS[camera]}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Video controls */}
-      <div className="video-controls">
-        <button className="btn btn-sm" onClick={skipBack} title="Skip back 10s">
-          <SkipBackIcon />
-        </button>
-
-        <button className="video-play-btn" onClick={playing ? pauseAll : playAll}>
-          {playing ? <PauseIcon /> : <PlayIcon />}
-        </button>
-
-        <button className="btn btn-sm" onClick={skipForward} title="Skip forward 30s">
-          <SkipForwardIcon />
-        </button>
-
-        <div className="video-time">
-          {formatTime(currentTime)} / {formatTime(duration)}
-        </div>
-
-        <div className="video-timeline" onClick={handleTimelineClick}>
+      {/* Video grid or empty state */}
+      {hasVideos ? (
+        <>
           <div
-            className="video-timeline-progress"
-            style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }}
-          />
+            className={`video-grid layout-${layout.cameras.length}`}
+            style={{
+              gridTemplateColumns: `repeat(${layout.cols}, 1fr)`,
+            }}
+          >
+            {layout.cameras.map(camera => (
+                <div key={camera} className="video-cell">
+                  {videoFiles[camera] ? (
+                    <video
+                      ref={el => { videoRefs.current[camera] = el; }}
+                      src={videoFiles[camera]}
+                      onTimeUpdate={handleTimeUpdate(camera)}
+                      onDurationChange={handleDurationChange(camera)}
+                      onEnded={pauseAll}
+                      muted
+                      playsInline
+                    />
+                  ) : (
+                    <div style={{ color: '#666', fontSize: '12px' }}>No video</div>
+                  )}
+                  <div className="video-cell-label">{CAMERAS[camera]}</div>
+                </div>
+            ))}
+          </div>
+
+          {/* Video controls */}
+          <div className="video-controls">
+            <button className="btn btn-sm" onClick={skipBack} title="Skip back 10s">
+              <SkipBackIcon />
+            </button>
+
+            <button className="video-play-btn" onClick={playing ? pauseAll : playAll}>
+              {playing ? <PauseIcon /> : <PlayIcon />}
+            </button>
+
+            <button className="btn btn-sm" onClick={skipForward} title="Skip forward 30s">
+              <SkipForwardIcon />
+            </button>
+
+            <div className="video-time">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </div>
+
+            <div className="video-timeline" onClick={handleTimelineClick}>
+              <div
+                className="video-timeline-progress"
+                style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }}
+              />
+            </div>
+          </div>
+        </>
+      ) : (
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#888',
+          fontSize: '14px'
+        }}>
+          No recordings in {selectedCategory === 'SentryClips' ? 'Sentry Clips' :
+                           selectedCategory === 'SavedClips' ? 'Saved Clips' : 'Recent Clips'}
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -381,6 +470,18 @@ function formatSequenceName(sequence) {
     return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
   }
   return sequence;
+}
+
+// Format timestamp to just show time (HH:MM)
+function formatTimestamp(timestamp) {
+  // Format: 2025-12-14_14-15-05 -> 2:15 PM
+  const match = timestamp.match(/\d{4}-\d{2}-\d{2}_(\d{2})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, hour, min] = match;
+    const date = new Date(2000, 0, 1, parseInt(hour), parseInt(min));
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+  return timestamp;
 }
 
 export default VideoViewer;

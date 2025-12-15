@@ -165,20 +165,40 @@ sudo mkdir -p /tmp/teslausb-www-deploy
 # Copy new UI files
 sudo cp -r /tmp/teslausb-www-new/* /tmp/teslausb-www-deploy/
 
-# Preserve existing backend files or use fallback from repo
+# CGI-BIN HANDLING: We NEVER replace the entire cgi-bin directory.
+# Instead, we copy existing scripts and only add/update our custom scripts on top.
+# This preserves all teslausb CGI scripts while allowing our customizations.
+
 if [ -d "/var/www/html/cgi-bin" ]; then
-    echo "Preserving cgi-bin..."
+    echo "Preserving existing cgi-bin scripts..."
     sudo cp -r /var/www/html/cgi-bin /tmp/teslausb-www-deploy/
-elif [ -d "/tmp/teslausb-cgi-bin" ]; then
-    echo "Installing cgi-bin from source..."
-    sudo cp -r /tmp/teslausb-cgi-bin /tmp/teslausb-www-deploy/cgi-bin
+
+    # Verify critical teslausb scripts exist
+    MISSING_SCRIPTS=""
+    for script in diagnose.sh ls.sh videolist.sh config.sh; do
+        if [ ! -f "/tmp/teslausb-www-deploy/cgi-bin/$script" ]; then
+            MISSING_SCRIPTS="$MISSING_SCRIPTS $script"
+        fi
+    done
+    if [ -n "$MISSING_SCRIPTS" ]; then
+        echo "WARNING: Missing teslausb CGI scripts:$MISSING_SCRIPTS"
+        echo "         These should be restored from the teslausb repository."
+    fi
+else
+    echo "WARNING: No existing cgi-bin found - creating empty directory"
+    sudo mkdir -p /tmp/teslausb-www-deploy/cgi-bin
 fi
 
-# Merge in local cgi-bin scripts (overwrite/add new scripts)
+# Merge in local cgi-bin scripts (add/update our custom scripts only)
 if [ -d "/tmp/teslausb-cgi-local" ]; then
-    echo "Installing local cgi-bin scripts..."
-    sudo mkdir -p /tmp/teslausb-www-deploy/cgi-bin
-    sudo cp -r /tmp/teslausb-cgi-local/* /tmp/teslausb-www-deploy/cgi-bin/
+    echo "Installing custom cgi-bin scripts..."
+    for script in /tmp/teslausb-cgi-local/*.sh; do
+        if [ -f "$script" ]; then
+            name=$(basename "$script")
+            echo "  Adding/updating: $name"
+            sudo cp "$script" /tmp/teslausb-www-deploy/cgi-bin/
+        fi
+    done
     sudo chmod +x /tmp/teslausb-www-deploy/cgi-bin/*.sh
 fi
 
@@ -238,16 +258,19 @@ fi
 # (TeslaCam, Music, etc. are symlinks to mounted filesystems)
 echo "Deploying new UI..."
 
-# Create backup of current UI (excluding symlinks to mounted filesystems)
+# Create backup of current UI (excluding symlinks and large data directories)
 if [ -d "/var/www/html" ]; then
     echo "Creating backup of current UI..."
     sudo rm -rf /var/www/html.backup 2>/dev/null || true
     sudo mkdir -p /var/www/html.backup
-    # Copy only non-symlink items
+    # Copy only UI files, skip symlinks and data directories (TeslaCam, fs, etc.)
     for item in /var/www/html/*; do
-        if [ ! -L "$item" ]; then
-            sudo cp -r "$item" /var/www/html.backup/ 2>/dev/null || true
+        name=$(basename "$item")
+        # Skip symlinks, TeslaCam, fs, and other data directories
+        if [ -L "$item" ] || [ "$name" = "TeslaCam" ] || [ "$name" = "fs" ]; then
+            continue
         fi
+        sudo cp -r "$item" /var/www/html.backup/ 2>/dev/null || true
     done
     # Mark this as a valid backup with timestamp
     date > /tmp/backup_marker && sudo mv /tmp/backup_marker /var/www/html.backup/.backup_marker
@@ -275,12 +298,22 @@ sudo ln -sf /mutable/archiveloop.log /var/www/html/archiveloop.log
 sudo ln -sf /boot/firmware/teslausb-headless-setup.log /var/www/html/teslausb-headless-setup.log
 sudo ln -sf /tmp/diagnostics.txt /var/www/html/diagnostics.txt
 
-# Create fs directory with symlinks to mounted drives
+# Create fs directory with symlinks to mounted drives (skip if autofs/already mounted)
 echo "Creating drive symlinks..."
-sudo mkdir -p /var/www/html/fs
-sudo ln -sf /mnt/music /var/www/html/fs/Music
-sudo ln -sf /mnt/lightshow /var/www/html/fs/LightShow
-sudo ln -sf /mnt/boombox /var/www/html/fs/Boombox
+if ! mountpoint -q /var/www/html/fs 2>/dev/null; then
+    sudo mkdir -p /var/www/html/fs
+    # Only create symlinks if target doesn't exist or is a symlink (not a mount)
+    for drive in Music:music LightShow:lightshow Boombox:boombox; do
+        name="${drive%%:*}"
+        src="${drive##*:}"
+        target="/var/www/html/fs/$name"
+        if [ ! -e "$target" ] || [ -L "$target" ]; then
+            sudo ln -sf "/mnt/$src" "$target" 2>/dev/null || true
+        fi
+    done
+else
+    echo "  Skipping - /var/www/html/fs is managed by autofs"
+fi
 
 # Create TeslaCam symlink for video viewer
 echo "Creating TeslaCam symlink..."
