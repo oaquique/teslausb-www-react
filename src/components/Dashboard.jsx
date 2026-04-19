@@ -2,12 +2,7 @@ import { useState, useCallback, useMemo } from 'preact/hooks';
 import { useLogTail, parseSyncStatus } from '../hooks/useLogTail';
 import { useMusicSyncProgress, useCamSyncProgress } from '../hooks/useMusicSyncProgress';
 import { triggerSync } from '../services/api';
-import {
-  CameraIcon,
-  MusicIcon,
-  HardDriveIcon,
-  BluetoothIcon,
-} from './Icons';
+import { CameraIcon, MusicIcon, HardDriveIcon, BluetoothIcon } from './Icons';
 import { StorageBar } from './StorageBar';
 import { SyncStatus } from './SyncStatus';
 
@@ -20,14 +15,12 @@ export function Dashboard({ status, computed, config, storage, onRefresh }) {
 
   // Check if music sync is active (for enabling progress polling)
   const isMusicSyncActive = useMemo(() => {
-    return syncStatus.state === 'archiving' &&
-           syncStatus.message?.toLowerCase().includes('music');
+    return syncStatus.state === 'archiving' && syncStatus.message?.toLowerCase().includes('music');
   }, [syncStatus.state, syncStatus.message]);
 
   // Check if CAM archiving is active (for enabling progress polling)
   const isCamSyncActive = useMemo(() => {
-    return syncStatus.state === 'archiving' &&
-           !syncStatus.message?.toLowerCase().includes('music');
+    return syncStatus.state === 'archiving' && !syncStatus.message?.toLowerCase().includes('music');
   }, [syncStatus.state, syncStatus.message]);
 
   // Poll music sync progress when music sync is active
@@ -52,8 +45,18 @@ export function Dashboard({ status, computed, config, storage, onRefresh }) {
   const features = [
     { key: 'cam', label: 'TeslaCam', icon: CameraIcon, enabled: config?.has_cam === 'yes' },
     { key: 'music', label: 'Music', icon: MusicIcon, enabled: config?.has_music === 'yes' },
-    { key: 'lightshow', label: 'LightShow', icon: HardDriveIcon, enabled: config?.has_lightshow === 'yes' },
-    { key: 'boombox', label: 'Boombox', icon: HardDriveIcon, enabled: config?.has_boombox === 'yes' },
+    {
+      key: 'lightshow',
+      label: 'LightShow',
+      icon: HardDriveIcon,
+      enabled: config?.has_lightshow === 'yes',
+    },
+    {
+      key: 'boombox',
+      label: 'Boombox',
+      icon: HardDriveIcon,
+      enabled: config?.has_boombox === 'yes',
+    },
   ];
 
   // Only show BLE if configured
@@ -64,8 +67,10 @@ export function Dashboard({ status, computed, config, storage, onRefresh }) {
   return (
     <div className="dashboard-content">
       {/* Configured Features */}
-      <div className="dashboard-section">
-        <div className="section-title">Configured Features</div>
+      <section className="dashboard-section" aria-labelledby="features-title">
+        <h2 className="section-title" id="features-title">
+          Configured Features
+        </h2>
         <div className="features-row">
           {features.map(({ key, label, enabled }) => (
             <div key={key} className={`feature-badge ${enabled ? 'enabled' : 'disabled'}`}>
@@ -73,13 +78,15 @@ export function Dashboard({ status, computed, config, storage, onRefresh }) {
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
       {/* Storage Visualization */}
-      <div className="dashboard-section">
+      <section className="dashboard-section" aria-labelledby="storage-title">
         <div className="card">
           <div className="card-header">
-            <span className="card-title">Storage</span>
+            <h2 className="card-title" id="storage-title">
+              Storage
+            </h2>
             <span className="card-value">{computed?.diskTotalGB || '0'} GB</span>
           </div>
           <StorageBar
@@ -89,10 +96,10 @@ export function Dashboard({ status, computed, config, storage, onRefresh }) {
             config={config}
           />
         </div>
-      </div>
+      </section>
 
       {/* Sync Status */}
-      <div className="dashboard-section">
+      <section className="dashboard-section">
         <SyncStatus
           syncStatus={syncStatus}
           onTriggerSync={handleTriggerSync}
@@ -100,7 +107,7 @@ export function Dashboard({ status, computed, config, storage, onRefresh }) {
           musicProgress={musicProgress}
           camProgress={camProgress}
         />
-      </div>
+      </section>
     </div>
   );
 }

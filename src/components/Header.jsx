@@ -16,16 +16,19 @@ export function Header({ tabs, activeTab, onTabChange, lastUpdate, onRefresh }) 
   return (
     <header className="app-header">
       <div className="app-header-left">
-        <nav className="dashboard-nav">
+        <nav className="dashboard-nav" aria-label="Main">
           {tabs.map((tab) => {
             const Icon = TAB_ICONS[tab.id] || DashboardIcon;
+            const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                className={`nav-link ${activeTab === tab.id ? 'active' : ''}`}
+                type="button"
+                className={`nav-link ${isActive ? 'active' : ''}`}
+                aria-current={isActive ? 'page' : undefined}
                 onClick={() => onTabChange(tab.id)}
               >
-                <Icon />
+                <Icon aria-hidden="true" />
                 <span>{tab.label}</span>
               </button>
             );
@@ -34,11 +37,16 @@ export function Header({ tabs, activeTab, onTabChange, lastUpdate, onRefresh }) 
       </div>
 
       <div className="app-header-right desktop-status-bar">
-        <span className="app-last-update" style={{ marginRight: '12px' }}>
+        <span className="app-last-update">
           {lastUpdate && `Updated ${formatTime(lastUpdate)}`}
         </span>
-        <button className="btn" onClick={onRefresh}>
-          <RefreshIcon />
+        <button
+          type="button"
+          className="btn"
+          onClick={onRefresh}
+          aria-label="Refresh status"
+        >
+          <RefreshIcon aria-hidden="true" />
           <span>Refresh</span>
         </button>
       </div>

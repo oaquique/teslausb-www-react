@@ -1,52 +1,126 @@
-/* Lato Font - Local fallback for offline use */
-/* These fonts should be placed in /public/fonts/ */
+/* Typography — Local fallback for offline use on Raspberry Pi (Tesla WiFi) */
+/* Weights are pulled from public/fonts/ when Google Fonts CDN is unreachable. */
 
+/* Manrope — Headings (Design System) */
 @font-face {
-  font-family: 'Lato';
+  font-family: 'Manrope';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: local('Lato Regular'), local('Lato-Regular'),
-       url('/fonts/lato-regular.woff2') format('woff2'),
-       url('/fonts/lato-regular.woff') format('woff');
+  src:
+    local('Manrope Regular'),
+    local('Manrope-Regular'),
+    url('/fonts/manrope-regular.woff2') format('woff2');
 }
 
 @font-face {
-  font-family: 'Lato';
+  font-family: 'Manrope';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: local('Lato Medium'), local('Lato-Medium'),
-       url('/fonts/lato-medium.woff2') format('woff2'),
-       url('/fonts/lato-medium.woff') format('woff');
+  src:
+    local('Manrope Medium'),
+    local('Manrope-Medium'),
+    url('/fonts/manrope-medium.woff2') format('woff2');
 }
 
 @font-face {
-  font-family: 'Lato';
+  font-family: 'Manrope';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: local('Lato Semibold'), local('Lato-Semibold'),
-       url('/fonts/lato-semibold.woff2') format('woff2'),
-       url('/fonts/lato-semibold.woff') format('woff');
+  src:
+    local('Manrope SemiBold'),
+    local('Manrope-SemiBold'),
+    url('/fonts/manrope-semibold.woff2') format('woff2');
 }
 
 @font-face {
-  font-family: 'Lato';
+  font-family: 'Manrope';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: local('Lato Bold'), local('Lato-Bold'),
-       url('/fonts/lato-bold.woff2') format('woff2'),
-       url('/fonts/lato-bold.woff') format('woff');
+  src:
+    local('Manrope Bold'),
+    local('Manrope-Bold'),
+    url('/fonts/manrope-bold.woff2') format('woff2');
+}
+
+/* DM Sans — Body */
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    local('DM Sans Regular'),
+    local('DMSans-Regular'),
+    url('/fonts/dm-sans-regular.woff2') format('woff2');
 }
 
 @font-face {
-  font-family: 'Lato';
-  font-style: italic;
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src:
+    local('DM Sans Medium'),
+    local('DMSans-Medium'),
+    url('/fonts/dm-sans-medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src:
+    local('DM Sans SemiBold'),
+    local('DMSans-SemiBold'),
+    url('/fonts/dm-sans-semibold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src:
+    local('DM Sans Bold'),
+    local('DMSans-Bold'),
+    url('/fonts/dm-sans-bold.woff2') format('woff2');
+}
+
+/* JetBrains Mono — Code & Data Values */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: local('Lato Italic'), local('Lato-Italic'),
-       url('/fonts/lato-italic.woff2') format('woff2'),
-       url('/fonts/lato-italic.woff') format('woff');
+  src:
+    local('JetBrains Mono'),
+    local('JetBrainsMono-Regular'),
+    url('/fonts/jetbrains-mono-regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src:
+    local('JetBrains Mono Medium'),
+    local('JetBrainsMono-Medium'),
+    url('/fonts/jetbrains-mono-medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src:
+    local('JetBrains Mono SemiBold'),
+    local('JetBrainsMono-SemiBold'),
+    url('/fonts/jetbrains-mono-semibold.woff2') format('woff2');
 }

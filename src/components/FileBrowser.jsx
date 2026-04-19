@@ -19,8 +19,15 @@ export function FileBrowser({ config }) {
     }
   }, []);
 
-  // Load script on mount
+  // Load scripts on mount (filebrowser + jsmediatags for ID3 reading)
   useEffect(() => {
+    if (!document.querySelector('script[src="/jsmediatags.min.js"]')) {
+      const tagScript = document.createElement('script');
+      tagScript.src = '/jsmediatags.min.js';
+      tagScript.async = true;
+      document.head.appendChild(tagScript);
+    }
+
     if (window.FileBrowser) {
       setScriptLoaded(true);
       return;
@@ -82,22 +89,19 @@ export function FileBrowser({ config }) {
   }, [scriptLoaded, hasMusic, hasLightshow, hasBoombox]);
 
   // Check if any drives are configured
-  const hasDrives = config?.has_music === 'yes' ||
-                    config?.has_lightshow === 'yes' ||
-                    config?.has_boombox === 'yes';
+  const hasDrives =
+    config?.has_music === 'yes' || config?.has_lightshow === 'yes' || config?.has_boombox === 'yes';
 
   if (!hasDrives) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        color: '#9ca3af',
-        fontSize: '14px',
-      }}>
-        <svg style={{ width: 32, height: 32, marginBottom: 8, color: '#d1d5db' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <div className="file-browser-state file-browser-state--empty">
+        <svg
+          className="file-browser-state-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
         </svg>
         <span>No file drives configured</span>
@@ -107,34 +111,10 @@ export function FileBrowser({ config }) {
 
   // Show loading state while script loads
   if (!scriptLoaded) {
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        minHeight: '400px',
-        color: '#9ca3af',
-        fontSize: '14px',
-      }}>
-        Loading file browser...
-      </div>
-    );
+    return <div className="file-browser-state file-browser-state--loading">Loading file browser...</div>;
   }
 
-  return (
-    <div
-      ref={containerRef}
-      style={{
-        width: '100%',
-        height: 'calc(100% - 4px)',
-        minHeight: '400px',
-        flex: 1,
-        display: 'flex',
-        position: 'relative',
-      }}
-    />
-  );
+  return <div ref={containerRef} className="file-browser-container" />;
 }
 
 export default FileBrowser;

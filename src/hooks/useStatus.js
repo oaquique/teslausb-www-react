@@ -1,84 +1,89 @@
 import { useState, useEffect, useCallback } from 'preact/hooks';
-import { fetchStatus, fetchConfig, fetchStorage } from '../services/api';
+import { subscribe, reconnect } from '../services/eventStream';
 
 /**
- * Hook for managing system status with polling
- * @param {number} pollInterval - Polling interval in ms (default 5000)
- * @returns {Object} Status, config, storage, loading state, and refresh function
+ * Subscribes to the shared SSE event stream and returns the same shape
+ * the old polling-based useStatus did, so the rest of the UI is
+ * unchanged. `refresh()` tears down and rebuilds the SSE connection.
  */
-export function useStatus(pollInterval = 5000) {
-  const [status, setStatus] = useState(null);
-  const [config, setConfig] = useState(null);
-  const [storage, setStorage] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [lastUpdate, setLastUpdate] = useState(null);
-
-  const refresh = useCallback(async () => {
-    try {
-      const [statusData, configData, storageData] = await Promise.all([
-        fetchStatus(),
-        fetchConfig(),
-        fetchStorage().catch(() => null), // Storage API is optional
-      ]);
-      setStatus(statusData);
-      setConfig(configData);
-      setStorage(storageData);
-      setLastUpdate(new Date());
-      setError(null);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+export function useStatus() {
+  const [state, setState] = useState({
+    status: null,
+    config: null,
+    storage: null,
+    error: null,
+    lastUpdate: null,
+    connectionState: 'idle',
+  });
 
   useEffect(() => {
-    refresh();
-    const interval = setInterval(refresh, pollInterval);
-    return () => clearInterval(interval);
-  }, [refresh, pollInterval]);
+    const unsubscribe = subscribe((snapshot) => {
+      setState({
+        status: snapshot.status,
+        config: snapshot.config,
+        storage: snapshot.storage,
+        error: snapshot.error,
+        lastUpdate: snapshot.lastUpdate,
+        connectionState: snapshot.connectionState,
+      });
+    });
+    return unsubscribe;
+  }, []);
 
-  // Compute derived values
-  const computed = status ? {
-    cpuTempC: status.cpu_temp ? (parseInt(status.cpu_temp, 10) / 1000).toFixed(1) : null,
-    uptimeFormatted: formatUptime(parseInt(status.uptime || '0', 10)),
-    diskUsedPercent: status.total_space && status.free_space
-      ? Math.round(((parseInt(status.total_space, 10) - parseInt(status.free_space, 10)) / parseInt(status.total_space, 10)) * 100)
-      : 0,
-    diskUsedGB: status.total_space && status.free_space
-      ? ((parseInt(status.total_space, 10) - parseInt(status.free_space, 10)) / (1024 * 1024 * 1024)).toFixed(1)
-      : '0',
-    diskTotalGB: status.total_space
-      ? (parseInt(status.total_space, 10) / (1024 * 1024 * 1024)).toFixed(1)
-      : '0',
-    diskFreeGB: status.free_space
-      ? (parseInt(status.free_space, 10) / (1024 * 1024 * 1024)).toFixed(1)
-      : '0',
-    drivesActive: status.drives_active === 'yes',
-    wifiConnected: !!status.wifi_ssid && status.wifi_ssid !== '',
-    wifiSignalPercent: parseWifiSignal(status.wifi_strength),
-    ethernetConnected: !!status.ether_ip && status.ether_ip !== '',
-    snapshotCount: parseInt(status.num_snapshots || '0', 10),
-  } : null;
+  const refresh = useCallback(() => reconnect(), []);
+
+  const computed = state.status
+    ? {
+        cpuTempC: state.status.cpu_temp
+          ? (parseInt(state.status.cpu_temp, 10) / 1000).toFixed(1)
+          : null,
+        uptimeFormatted: formatUptime(parseInt(state.status.uptime || '0', 10)),
+        diskUsedPercent:
+          state.status.total_space && state.status.free_space
+            ? Math.round(
+                ((parseInt(state.status.total_space, 10) -
+                  parseInt(state.status.free_space, 10)) /
+                  parseInt(state.status.total_space, 10)) *
+                  100
+              )
+            : 0,
+        diskUsedGB:
+          state.status.total_space && state.status.free_space
+            ? (
+                (parseInt(state.status.total_space, 10) -
+                  parseInt(state.status.free_space, 10)) /
+                (1024 * 1024 * 1024)
+              ).toFixed(1)
+            : '0',
+        diskTotalGB: state.status.total_space
+          ? (parseInt(state.status.total_space, 10) / (1024 * 1024 * 1024)).toFixed(1)
+          : '0',
+        diskFreeGB: state.status.free_space
+          ? (parseInt(state.status.free_space, 10) / (1024 * 1024 * 1024)).toFixed(1)
+          : '0',
+        drivesActive: state.status.drives_active === 'yes',
+        wifiConnected: !!state.status.wifi_ssid && state.status.wifi_ssid !== '',
+        wifiSignalPercent: parseWifiSignal(state.status.wifi_strength),
+        ethernetConnected: !!state.status.ether_ip && state.status.ether_ip !== '',
+        snapshotCount: parseInt(state.status.num_snapshots || '0', 10),
+      }
+    : null;
+
+  const loading = !state.status && state.connectionState !== 'disconnected';
 
   return {
-    status,
-    config,
-    storage,
+    status: state.status,
+    config: state.config,
+    storage: state.storage,
     computed,
     loading,
-    error,
-    lastUpdate,
+    error: state.error,
+    lastUpdate: state.lastUpdate,
+    connectionState: state.connectionState,
     refresh,
   };
 }
 
-/**
- * Format uptime seconds into human-readable string
- * @param {number} seconds - Uptime in seconds
- * @returns {string} Formatted uptime
- */
 function formatUptime(seconds) {
   if (!seconds || isNaN(seconds)) return '0s';
 
@@ -96,11 +101,6 @@ function formatUptime(seconds) {
   return parts.join(' ');
 }
 
-/**
- * Parse WiFi signal strength string
- * @param {string} strength - e.g., "40/70"
- * @returns {number} Signal percentage
- */
 function parseWifiSignal(strength) {
   if (!strength) return 0;
   const parts = strength.split('/');

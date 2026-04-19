@@ -20,9 +20,17 @@ export function SyncStatus({ syncStatus, onTriggerSync, loading, musicProgress, 
       case 'idle':
         return { label: 'Idle', color: 'idle', description: 'Ready to archive' };
       case 'connecting':
-        return { label: 'Connecting', color: 'connecting', description: message || 'Connecting to server...' };
+        return {
+          label: 'Connecting',
+          color: 'connecting',
+          description: message || 'Connecting to server...',
+        };
       case 'archiving':
-        return { label: 'Archiving', color: 'archiving', description: message || 'Syncing files...' };
+        return {
+          label: 'Archiving',
+          color: 'archiving',
+          description: message || 'Syncing files...',
+        };
       case 'complete':
         return { label: 'Complete', color: 'idle', description: message || 'Archive complete' };
       case 'error':
@@ -57,7 +65,10 @@ export function SyncStatus({ syncStatus, onTriggerSync, loading, musicProgress, 
     if (camProgress.percentage > 0) {
       progressPercent = camProgress.percentage;
     } else if (camProgress.filesTotal > 0 && camProgress.filesDone > 0) {
-      progressPercent = Math.min(Math.round((camProgress.filesDone / camProgress.filesTotal) * 100), 100);
+      progressPercent = Math.min(
+        Math.round((camProgress.filesDone / camProgress.filesTotal) * 100),
+        100
+      );
     }
     progressDetails = {
       type: 'cam',
@@ -81,18 +92,20 @@ export function SyncStatus({ syncStatus, onTriggerSync, loading, musicProgress, 
   };
 
   return (
-    <div className="sync-status-card">
+    <section className="sync-status-card" aria-label="Sync status" aria-live="polite">
       <div className="sync-status-header">
         <span className="sync-status-title">Sync Status</span>
         <div className="sync-status-indicator">
-          <div className={`sync-status-dot ${stateInfo.color}`} />
+          <div
+            className={`sync-status-dot ${stateInfo.color}`}
+            role="img"
+            aria-label={`${stateInfo.label} indicator`}
+          />
           <span>{stateInfo.label}</span>
         </div>
       </div>
 
-      <div className="sync-status-description">
-        {stateInfo.description}
-      </div>
+      <div className="sync-status-description">{stateInfo.description}</div>
 
       {/* Progress bar - shown during archiving */}
       {isActive && (
@@ -150,39 +163,37 @@ export function SyncStatus({ syncStatus, onTriggerSync, loading, musicProgress, 
       {/* Indeterminate progress message when archiving but no progress data yet */}
       {isActive && !progressDetails && state === 'archiving' && (
         <div className="sync-details">
-          <div className="sync-progress-main">
-            Preparing...
-          </div>
+          <div className="sync-progress-main">Preparing...</div>
         </div>
       )}
 
       {/* Last activity for idle state */}
       {!isActive && lastActivity && (
-        <div className="sync-details">
-          Last sync: {formatLastActivity(lastActivity)}
-        </div>
+        <div className="sync-details">Last sync: {formatLastActivity(lastActivity)}</div>
       )}
 
       {/* Elapsed time for complete state */}
       {elapsedTime && state === 'complete' && (
-        <div className="sync-details">
-          Completed in {elapsedTime}
-        </div>
+        <div className="sync-details">Completed in {elapsedTime}</div>
       )}
 
       {/* Manual trigger button */}
       {(state === 'idle' || state === 'complete' || state === 'error') && (
         <button
-          className="btn btn-primary btn-sm"
+          type="button"
+          className="btn btn-primary btn-sm sync-trigger-btn"
           onClick={onTriggerSync}
           disabled={loading}
-          style={{ marginTop: '0.75rem' }}
         >
-          <SyncIcon style={{ width: 14, height: 14 }} className={loading ? 'spinning' : ''} />
+          <SyncIcon
+            style={{ width: 14, height: 14 }}
+            className={loading ? 'spinning' : ''}
+            aria-hidden="true"
+          />
           <span>{loading ? 'Starting...' : 'Sync Now'}</span>
         </button>
       )}
-    </div>
+    </section>
   );
 }
 

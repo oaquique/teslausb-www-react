@@ -38,7 +38,7 @@ export function StorageBar({ storage, total, free, config }) {
   if (drives.length === 0 && !freeBytes) {
     return (
       <div className="storage-bar-container">
-        <div className="storage-info">No storage data available</div>
+        <div className="storage-empty">No storage data available</div>
       </div>
     );
   }
@@ -48,7 +48,7 @@ export function StorageBar({ storage, total, free, config }) {
   const barTotal = totalAllocated + freeBytes;
 
   // Build segments for bar
-  const segments = drives.map(drive => ({
+  const segments = drives.map((drive) => ({
     type: drive.type,
     label: drive.label,
     bytes: drive.allocated,
@@ -66,9 +66,13 @@ export function StorageBar({ storage, total, free, config }) {
   }
 
   return (
-    <div className="storage-bar-container">
+    <div className="storage-bar-container" aria-live="polite">
       {/* Visual bar */}
-      <div className="storage-bar">
+      <div
+        className="storage-bar"
+        role="img"
+        aria-label={`Storage: ${segments.map((s) => `${s.label} ${formatBytes(s.bytes)}`).join(', ')}`}
+      >
         {segments.map((seg, idx) => (
           <div
             key={idx}
@@ -83,9 +87,10 @@ export function StorageBar({ storage, total, free, config }) {
       <div className="storage-legend">
         {drives.map((drive, idx) => {
           // Calculate usage percentage within the drive (not allocation percentage)
-          const usagePercent = drive.used !== null && drive.allocated > 0
-            ? Math.round((drive.used / drive.allocated) * 100)
-            : null;
+          const usagePercent =
+            drive.used !== null && drive.allocated > 0
+              ? Math.round((drive.used / drive.allocated) * 100)
+              : null;
           return (
             <div key={idx} className="storage-legend-item">
               <div className={`storage-legend-dot ${drive.type}`} />
@@ -94,7 +99,8 @@ export function StorageBar({ storage, total, free, config }) {
                 {formatBytes(drive.allocated)}
                 {drive.used !== null && (
                   <span className="storage-legend-used">
-                    {' '}({formatBytes(drive.used)} used{drive.isCached ? '~' : ''}
+                    {' '}
+                    ({formatBytes(drive.used)} used{drive.isCached ? '~' : ''}
                     {usagePercent !== null && `, ${usagePercent}%`})
                   </span>
                 )}
@@ -105,16 +111,12 @@ export function StorageBar({ storage, total, free, config }) {
         <div className="storage-legend-item">
           <div className="storage-legend-dot free" />
           <span className="storage-legend-label">Free</span>
-          <span className="storage-legend-value">
-            {formatBytes(freeBytes)}
-          </span>
+          <span className="storage-legend-value">{formatBytes(freeBytes)}</span>
         </div>
       </div>
 
-      {drives.some(d => d.isCached) && (
-        <div className="storage-note">
-          ~ Last known (drive not currently mounted)
-        </div>
+      {drives.some((d) => d.isCached) && (
+        <div className="storage-note">~ Last known (drive not currently mounted)</div>
       )}
     </div>
   );

@@ -28,3 +28,8 @@ SESSION-NOTES.md
 
 # Release artifacts
 teslausb-react-ui.tgz
+
+# Playwright visual regression — artifacts only; baselines in tests/visual/__snapshots__ ARE committed
+test-results/
+playwright-report/
+playwright/.cache/

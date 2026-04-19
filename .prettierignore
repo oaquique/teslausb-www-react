@@ -1,0 +1,13 @@
+dist
+node_modules
+public/filebrowser.js
+public/filebrowser.css
+public/jsmediatags.min.js
+tests/visual/__snapshots__
+test-results
+playwright-report
+*.tgz
+
+# Markdown + HTML — keep hand-authored whitespace (AUDIT.md reflows poorly)
+*.md
+*.html

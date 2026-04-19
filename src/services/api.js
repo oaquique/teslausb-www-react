@@ -46,7 +46,9 @@ export async function listDirectory(rootPath, dirPath = '') {
   params.append('root', rootPath);
   if (dirPath) params.append('path', dirPath);
 
-  const response = await fetch(`${API_BASE}/ls.sh?${encodeURIComponent(rootPath)}&${encodeURIComponent(dirPath)}`);
+  const response = await fetch(
+    `${API_BASE}/ls.sh?${encodeURIComponent(rootPath)}&${encodeURIComponent(dirPath)}`
+  );
   if (!response.ok) throw new Error('Failed to list directory');
 
   const text = await response.text();
@@ -99,7 +101,10 @@ function parseDirectoryListing(text) {
 export async function uploadFile(rootPath, destPath, file, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${API_BASE}/upload.sh?${encodeURIComponent(rootPath)}&${encodeURIComponent(destPath)}`);
+    xhr.open(
+      'POST',
+      `${API_BASE}/upload.sh?${encodeURIComponent(rootPath)}&${encodeURIComponent(destPath)}`
+    );
     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
 
     xhr.upload.onprogress = (e) => {
@@ -138,7 +143,9 @@ export function getDownloadUrl(rootPath, filePath) {
  * @returns {string} Download URL
  */
 export function getZipDownloadUrl(rootPath, paths) {
-  const params = [encodeURIComponent(rootPath), ...paths.map(p => encodeURIComponent(p))].join('&');
+  const params = [encodeURIComponent(rootPath), ...paths.map((p) => encodeURIComponent(p))].join(
+    '&'
+  );
   return `${API_BASE}/downloadzip.sh?${params}`;
 }
 
@@ -149,7 +156,9 @@ export function getZipDownloadUrl(rootPath, paths) {
  * @returns {Promise<void>}
  */
 export async function createDirectory(rootPath, dirName) {
-  const response = await fetch(`${API_BASE}/mkdir.sh?${encodeURIComponent(rootPath)}&${encodeURIComponent(dirName)}`);
+  const response = await fetch(
+    `${API_BASE}/mkdir.sh?${encodeURIComponent(rootPath)}&${encodeURIComponent(dirName)}`
+  );
   if (!response.ok) throw new Error('Failed to create directory');
 }
 
@@ -161,7 +170,9 @@ export async function createDirectory(rootPath, dirName) {
  * @returns {Promise<void>}
  */
 export async function moveItem(rootPath, currentPath, newName) {
-  const response = await fetch(`${API_BASE}/mv.sh?${encodeURIComponent(rootPath)}&${encodeURIComponent(currentPath)}&${encodeURIComponent(newName)}`);
+  const response = await fetch(
+    `${API_BASE}/mv.sh?${encodeURIComponent(rootPath)}&${encodeURIComponent(currentPath)}&${encodeURIComponent(newName)}`
+  );
   if (!response.ok) throw new Error('Failed to move/rename item');
 }
 
@@ -172,7 +183,9 @@ export async function moveItem(rootPath, currentPath, newName) {
  * @returns {Promise<void>}
  */
 export async function deleteItems(rootPath, paths) {
-  const params = [encodeURIComponent(rootPath), ...paths.map(p => encodeURIComponent(p))].join('&');
+  const params = [encodeURIComponent(rootPath), ...paths.map((p) => encodeURIComponent(p))].join(
+    '&'
+  );
   const response = await fetch(`${API_BASE}/rm.sh?${params}`);
   if (!response.ok) throw new Error('Failed to delete items');
 }
@@ -185,7 +198,9 @@ export async function deleteItems(rootPath, paths) {
  * @returns {Promise<void>}
  */
 export async function copyFile(rootPath, sourcePath, destName) {
-  const response = await fetch(`${API_BASE}/cp.sh?${encodeURIComponent(rootPath)}&${encodeURIComponent(sourcePath)}&${encodeURIComponent(destName)}`);
+  const response = await fetch(
+    `${API_BASE}/cp.sh?${encodeURIComponent(rootPath)}&${encodeURIComponent(sourcePath)}&${encodeURIComponent(destName)}`
+  );
   if (!response.ok) throw new Error('Failed to copy file');
 }
 

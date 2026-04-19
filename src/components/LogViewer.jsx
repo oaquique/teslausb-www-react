@@ -36,13 +36,7 @@ export function LogViewer() {
 
   // Use log tailing hook for archive and setup logs
   const isRegularLog = activeLog !== 'diagnostics';
-  const {
-    lines,
-    loading,
-    error,
-    refresh,
-    clear,
-  } = useLogTail(
+  const { lines, loading, error, refresh, clear } = useLogTail(
     isRegularLog ? LOG_TYPES[activeLog].file : '',
     2000,
     isRegularLog
@@ -109,19 +103,12 @@ export function LogViewer() {
   };
 
   const currentLogInfo = LOG_TYPES[activeLog];
-  const displayLines = activeLog === 'diagnostics'
-    ? (diagnosticsContent?.split('\n') || [])
-    : lines;
+  const displayLines = activeLog === 'diagnostics' ? diagnosticsContent?.split('\n') || [] : lines;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="log-view">
       {/* Log type selector */}
-      <div style={{
-        display: 'flex',
-        gap: '0.5rem',
-        marginBottom: '1rem',
-        flexWrap: 'wrap',
-      }}>
+      <div className="log-type-selector">
         {Object.entries(LOG_TYPES).map(([key, log]) => (
           <button
             key={key}
@@ -135,67 +122,77 @@ export function LogViewer() {
       </div>
 
       {/* Log viewer */}
-      <div className="log-viewer" style={{ flex: 1 }}>
+      <div className="log-viewer log-viewer--flex">
         <div className="log-viewer-header">
           <div className="log-viewer-title">
             {currentLogInfo.label}
-            <span style={{ fontWeight: 400, marginLeft: '8px', opacity: 0.7 }}>
-              — {currentLogInfo.description}
-            </span>
+            <span className="log-viewer-description">— {currentLogInfo.description}</span>
           </div>
           <div className="log-viewer-actions">
             {activeLog === 'diagnostics' ? (
               <button
+                type="button"
                 className="btn btn-sm log-action-btn"
                 onClick={handleGenerateDiagnostics}
                 disabled={diagnosticsLoading}
+                aria-label="Regenerate diagnostics"
               >
-                <RefreshIcon className={diagnosticsLoading ? 'spinning' : ''} />
+                <RefreshIcon
+                  className={diagnosticsLoading ? 'spinning' : ''}
+                  aria-hidden="true"
+                />
                 <span>Regenerate</span>
               </button>
             ) : (
               <>
                 <button
+                  type="button"
                   className="btn btn-sm log-action-btn"
                   onClick={refresh}
                   disabled={loading}
                   title="Refresh"
+                  aria-label="Refresh log"
                 >
-                  <RefreshIcon className={loading ? 'spinning' : ''} />
+                  <RefreshIcon className={loading ? 'spinning' : ''} aria-hidden="true" />
                 </button>
                 <button
+                  type="button"
                   className="btn btn-sm log-action-btn"
                   onClick={clear}
                   title="Clear"
+                  aria-label="Clear log"
                 >
-                  <TrashIcon />
+                  <TrashIcon aria-hidden="true" />
                 </button>
               </>
             )}
             <button
+              type="button"
               className="btn btn-sm log-action-btn"
               onClick={handleDownload}
               disabled={displayLines.length === 0}
               title="Download"
+              aria-label="Download log"
             >
-              <DownloadIcon />
+              <DownloadIcon aria-hidden="true" />
             </button>
           </div>
         </div>
 
         <div className="log-viewer-content" ref={logContainerRef}>
           {(loading && displayLines.length === 0) || diagnosticsLoading ? (
-            <div style={{ color: '#888', fontStyle: 'italic' }}>Loading...</div>
+            <div className="log-message log-message--info">Loading...</div>
           ) : error ? (
             error.includes('not found') ? (
-              <div style={{ color: '#888', fontStyle: 'italic' }}>
-                Log file not available. {activeLog === 'setup' && 'The setup log is only present during initial setup.'}
+              <div className="log-message log-message--info">
+                Log file not available.{' '}
+                {activeLog === 'setup' && 'The setup log is only present during initial setup.'}
               </div>
             ) : (
-              <div style={{ color: '#f87171' }}>Error: {error}</div>
+              <div className="log-message log-message--error">Error: {error}</div>
             )
           ) : displayLines.length === 0 ? (
-            <div style={{ color: '#888', fontStyle: 'italic' }}>No log entries</div>
+            <div className="log-message log-message--info">Log is empty.</div>
           ) : (
             displayLines.map((line, idx) => (
               <div key={idx} className={`log-line ${getLineClass(line)}`}>
@@ -208,13 +205,7 @@ export function LogViewer() {
 
       {/* Log stats */}
       {isRegularLog && lines.length > 0 && (
-        <div style={{
-          marginTop: '0.5rem',
-          fontSize: '11px',
-          color: '#666',
-          display: 'flex',
-          gap: '1rem',
-        }}>
+        <div className="log-stats">
           <span>{lines.length} lines</span>
           <span>Auto-refreshing every 2s</span>
         </div>

@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
-import { fetchMusicSyncProgress, fetchCamSyncProgress } from '../services/api';
+import { useState, useEffect } from 'preact/hooks';
+import { subscribe } from '../services/eventStream';
 
 /**
- * Hook for polling music sync progress
- * @param {boolean} enabled - Whether to enable polling (should be true when music sync is active)
- * @param {number} pollInterval - Polling interval in ms (default 1500)
- * @returns {Object} Music sync progress data
+ * Music sync progress — now sourced from the shared SSE stream.
+ * `enabled` is kept for API compatibility but is effectively ignored
+ * under SSE (the server-side events.sh always emits sync data; the cost
+ * of receiving it is negligible).
  */
-export function useMusicSyncProgress(enabled = false, pollInterval = 1500) {
+export function useMusicSyncProgress(_enabled = false) {
   const [progress, setProgress] = useState({
     active: false,
     bytesTransferred: 0,
@@ -15,95 +15,24 @@ export function useMusicSyncProgress(enabled = false, pollInterval = 1500) {
     speed: '',
     eta: '',
   });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const enabledRef = useRef(enabled);
 
-  const refresh = useCallback(async () => {
-    try {
-      const data = await fetchMusicSyncProgress();
-      setProgress(data);
-      setError(null);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    return subscribe((snapshot) => {
+      if (snapshot.music) setProgress(snapshot.music);
+      setError(snapshot.error);
+    });
   }, []);
-
-  // Update ref when enabled changes
-  useEffect(() => {
-    enabledRef.current = enabled;
-  }, [enabled]);
-
-  useEffect(() => {
-    if (!enabled) {
-      // Reset progress when disabled
-      setProgress({
-        active: false,
-        bytesTransferred: 0,
-        percentage: 0,
-        speed: '',
-        eta: '',
-      });
-      return;
-    }
-
-    setLoading(true);
-    refresh(); // Initial fetch
-
-    const interval = setInterval(() => {
-      if (enabledRef.current) {
-        refresh();
-      }
-    }, pollInterval);
-
-    return () => clearInterval(interval);
-  }, [enabled, pollInterval, refresh]);
 
   return {
     ...progress,
-    loading,
+    loading: false,
     error,
-    refresh,
+    refresh: () => {},
   };
 }
 
-/**
- * Format bytes to human-readable string
- * @param {number} bytes - Bytes to format
- * @returns {string} Formatted string (e.g., "1.23 GB")
- */
-export function formatBytes(bytes) {
-  if (bytes === 0) return '0 B';
-
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const k = 1024;
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return `${(bytes / Math.pow(k, i)).toFixed(i > 0 ? 2 : 0)} ${units[i]}`;
-}
-
-/**
- * Format ETA to human-readable string
- * @param {string} eta - ETA in format "H:MM:SS" or "MM:SS"
- * @returns {string} Formatted string (e.g., "~5:23 remaining")
- */
-export function formatEta(eta) {
-  if (!eta || eta === '0:00:00') return '';
-
-  // Remove leading zeros from hours if present
-  const cleaned = eta.replace(/^0:/, '');
-  return `~${cleaned} remaining`;
-}
-
-/**
- * Hook for polling TeslaCam archive progress
- * @param {boolean} enabled - Whether to enable polling (should be true when cam archiving is active)
- * @param {number} pollInterval - Polling interval in ms (default 1500)
- * @returns {Object} Cam sync progress data
- */
-export function useCamSyncProgress(enabled = false, pollInterval = 1500) {
+export function useCamSyncProgress(_enabled = false) {
   const [progress, setProgress] = useState({
     active: false,
     bytesTransferred: 0,
@@ -114,61 +43,37 @@ export function useCamSyncProgress(enabled = false, pollInterval = 1500) {
     filesTotal: 0,
     currentFile: '',
   });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const enabledRef = useRef(enabled);
 
-  const refresh = useCallback(async () => {
-    try {
-      const data = await fetchCamSyncProgress();
-      setProgress(data);
-      setError(null);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    return subscribe((snapshot) => {
+      if (snapshot.cam) setProgress(snapshot.cam);
+      setError(snapshot.error);
+    });
   }, []);
-
-  // Update ref when enabled changes
-  useEffect(() => {
-    enabledRef.current = enabled;
-  }, [enabled]);
-
-  useEffect(() => {
-    if (!enabled) {
-      // Reset progress when disabled
-      setProgress({
-        active: false,
-        bytesTransferred: 0,
-        percentage: 0,
-        speed: '',
-        eta: '',
-        filesDone: 0,
-        filesTotal: 0,
-        currentFile: '',
-      });
-      return;
-    }
-
-    setLoading(true);
-    refresh(); // Initial fetch
-
-    const interval = setInterval(() => {
-      if (enabledRef.current) {
-        refresh();
-      }
-    }, pollInterval);
-
-    return () => clearInterval(interval);
-  }, [enabled, pollInterval, refresh]);
 
   return {
     ...progress,
-    loading,
+    loading: false,
     error,
-    refresh,
+    refresh: () => {},
   };
+}
+
+export function formatBytes(bytes) {
+  if (bytes === 0) return '0 B';
+
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const k = 1024;
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return `${(bytes / Math.pow(k, i)).toFixed(i > 0 ? 2 : 0)} ${units[i]}`;
+}
+
+export function formatEta(eta) {
+  if (!eta || eta === '0:00:00') return '';
+  const cleaned = eta.replace(/^0:/, '');
+  return `~${cleaned} remaining`;
 }
 
 export default useMusicSyncProgress;

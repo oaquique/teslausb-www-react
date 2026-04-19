@@ -23,8 +23,18 @@ const CAMERAS = {
 // Layout configurations
 const LAYOUTS = [
   { id: '6', name: 'All Cameras', cameras: Object.keys(CAMERAS), cols: 3 },
-  { id: '4-front', name: 'Front Focus', cameras: ['front', 'left_repeater', 'right_repeater', 'back'], cols: 2 },
-  { id: '4-rear', name: 'Rear Focus', cameras: ['back', 'left_repeater', 'right_repeater', 'front'], cols: 2 },
+  {
+    id: '4-front',
+    name: 'Front Focus',
+    cameras: ['front', 'left_repeater', 'right_repeater', 'back'],
+    cols: 2,
+  },
+  {
+    id: '4-rear',
+    name: 'Rear Focus',
+    cameras: ['back', 'left_repeater', 'right_repeater', 'front'],
+    cols: 2,
+  },
   { id: '2-side', name: 'Side View', cameras: ['left_repeater', 'right_repeater'], cols: 2 },
   { id: '1-front', name: 'Front Only', cameras: ['front'], cols: 1 },
   { id: '1-back', name: 'Rear Only', cameras: ['back'], cols: 1 },
@@ -154,21 +164,21 @@ export function VideoViewer() {
 
   // Synchronized playback controls
   const playAll = useCallback(() => {
-    Object.values(videoRefs.current).forEach(video => {
+    Object.values(videoRefs.current).forEach((video) => {
       if (video) video.play();
     });
     setPlaying(true);
   }, []);
 
   const pauseAll = useCallback(() => {
-    Object.values(videoRefs.current).forEach(video => {
+    Object.values(videoRefs.current).forEach((video) => {
       if (video) video.pause();
     });
     setPlaying(false);
   }, []);
 
   const seekAll = useCallback((time) => {
-    Object.values(videoRefs.current).forEach(video => {
+    Object.values(videoRefs.current).forEach((video) => {
       if (video) video.currentTime = time;
     });
     setCurrentTime(time);
@@ -183,34 +193,43 @@ export function VideoViewer() {
   }, [currentTime, duration, seekAll]);
 
   // Handle time updates from videos - only use master camera to avoid jumping
-  const handleTimeUpdate = useCallback((camera) => (e) => {
-    if (camera === masterCamera.current) {
-      setCurrentTime(e.target.currentTime);
-    }
-  }, []);
-
-  const handleDurationChange = useCallback((camera) => (e) => {
-    const dur = e.target.duration;
-    // Only accept valid, finite durations
-    if (dur && dur !== Infinity && !isNaN(dur)) {
-      // Set master camera when we first get a valid duration
-      if (!masterCamera.current) {
-        masterCamera.current = camera;
-      }
-      // Only update duration from master camera
+  const handleTimeUpdate = useCallback(
+    (camera) => (e) => {
       if (camera === masterCamera.current) {
-        setDuration(dur);
+        setCurrentTime(e.target.currentTime);
       }
-    }
-  }, []);
+    },
+    []
+  );
+
+  const handleDurationChange = useCallback(
+    (camera) => (e) => {
+      const dur = e.target.duration;
+      // Only accept valid, finite durations
+      if (dur && dur !== Infinity && !isNaN(dur)) {
+        // Set master camera when we first get a valid duration
+        if (!masterCamera.current) {
+          masterCamera.current = camera;
+        }
+        // Only update duration from master camera
+        if (camera === masterCamera.current) {
+          setDuration(dur);
+        }
+      }
+    },
+    []
+  );
 
   // Handle timeline click
-  const handleTimelineClick = useCallback((e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const percent = (e.clientX - rect.left) / rect.width;
-    const time = percent * duration;
-    seekAll(time);
-  }, [duration, seekAll]);
+  const handleTimelineClick = useCallback(
+    (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const percent = (e.clientX - rect.left) / rect.width;
+      const time = percent * duration;
+      seekAll(time);
+    },
+    [duration, seekAll]
+  );
 
   // Format time display
   const formatTime = (seconds) => {
@@ -221,11 +240,13 @@ export function VideoViewer() {
   };
 
   // Get sequences for category dropdown
-  const sequences = videoList?.[selectedCategory] ? Object.keys(videoList[selectedCategory]).sort().reverse() : [];
+  const sequences = videoList?.[selectedCategory]
+    ? Object.keys(videoList[selectedCategory]).sort().reverse()
+    : [];
 
   if (loading) {
     return (
-      <div className="video-viewer" style={{ justifyContent: 'center', alignItems: 'center' }}>
+      <div className="video-viewer video-centered">
         <span className="text-muted">Loading recordings...</span>
       </div>
     );
@@ -233,9 +254,9 @@ export function VideoViewer() {
 
   if (error) {
     return (
-      <div className="video-viewer" style={{ justifyContent: 'center', alignItems: 'center' }}>
+      <div className="video-viewer video-centered">
         <span className="status-unhealthy">Error: {error}</span>
-        <button className="btn" onClick={loadVideoList} style={{ marginTop: '1rem' }}>
+        <button type="button" className="btn video-retry-btn" onClick={loadVideoList}>
           Retry
         </button>
       </div>
@@ -247,31 +268,16 @@ export function VideoViewer() {
   return (
     <div className="video-viewer">
       {/* Clip selector bar - always visible so users can switch categories */}
-      <div className="video-selector" style={{
-        display: 'flex',
-        gap: '0.5rem',
-        padding: '8px 12px',
-        background: '#1a1a1a',
-        borderBottom: '1px solid #333',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-      }}>
+      <div className="video-selector-bar">
         {/* Category selector */}
         <select
+          className="video-select"
           value={selectedCategory}
           onChange={(e) => {
             setSelectedCategory(e.target.value);
             const seqs = Object.keys(videoList[e.target.value] || {});
             setSelectedSequence(seqs[0] || null);
-            setSelectedTimestamp(null); // Reset timestamp when category changes
-          }}
-          style={{
-            background: '#333',
-            color: '#fff',
-            border: '1px solid #444',
-            borderRadius: '4px',
-            padding: '6px 10px',
-            fontSize: '13px',
+            setSelectedTimestamp(null);
           }}
         >
           <option value="SentryClips">Sentry Clips</option>
@@ -281,88 +287,61 @@ export function VideoViewer() {
 
         {/* Sequence selector */}
         <select
+          className="video-select video-select--sequence"
           value={selectedSequence || ''}
           onChange={(e) => {
             setSelectedSequence(e.target.value);
-            setSelectedTimestamp(null); // Reset timestamp when date changes
-          }}
-          style={{
-            background: '#333',
-            color: '#fff',
-            border: '1px solid #444',
-            borderRadius: '4px',
-            padding: '6px 10px',
-            fontSize: '13px',
-            flex: 1,
-            maxWidth: '180px',
+            setSelectedTimestamp(null);
           }}
         >
-          {sequences.map(seq => (
-            <option key={seq} value={seq}>{formatSequenceName(seq)}</option>
+          {sequences.map((seq) => (
+            <option key={seq} value={seq}>
+              {formatSequenceName(seq)}
+            </option>
           ))}
         </select>
 
         {/* Timestamp selector (when multiple timestamps exist in a folder) */}
         {timestamps.length > 0 && (
           <select
+            className="video-select video-select--timestamp"
             value={selectedTimestamp || ''}
             onChange={(e) => setSelectedTimestamp(e.target.value)}
-            style={{
-              background: '#333',
-              color: '#fff',
-              border: '1px solid #444',
-              borderRadius: '4px',
-              padding: '6px 10px',
-              fontSize: '13px',
-              maxWidth: '120px',
-            }}
           >
-            {timestamps.map(ts => (
-              <option key={ts} value={ts}>{formatTimestamp(ts)}</option>
+            {timestamps.map((ts) => (
+              <option key={ts} value={ts}>
+                {formatTimestamp(ts)}
+              </option>
             ))}
           </select>
         )}
 
         {/* Layout selector */}
-        <div style={{ position: 'relative' }}>
+        <div className="video-layout-wrapper">
           <button
+            type="button"
             className="btn btn-sm btn-dark"
             onClick={() => setShowLayoutMenu(!showLayoutMenu)}
+            aria-expanded={showLayoutMenu}
+            aria-label={`Layout: ${layout.name}`}
           >
-            <LayoutIcon />
+            <LayoutIcon aria-hidden="true" />
             <span>{layout.name}</span>
-            <ChevronDownIcon />
+            <ChevronDownIcon aria-hidden="true" />
           </button>
           {showLayoutMenu && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              right: 0,
-              background: '#2a2a2a',
-              border: '1px solid #444',
-              borderRadius: '6px',
-              marginTop: '4px',
-              zIndex: 100,
-              minWidth: '150px',
-            }}>
-              {LAYOUTS.map(l => (
+            <div className="video-layout-menu" role="menu">
+              {LAYOUTS.map((l) => (
                 <button
                   key={l.id}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={layout.id === l.id}
                   onClick={() => {
                     setLayout(l);
                     setShowLayoutMenu(false);
                   }}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: layout.id === l.id ? '#0095f6' : 'transparent',
-                    color: '#fff',
-                    border: 'none',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                  }}
+                  className={`video-layout-menu-item ${layout.id === l.id ? 'active' : ''}`}
                 >
                   {l.name}
                 </button>
@@ -373,8 +352,8 @@ export function VideoViewer() {
 
         {/* Event location info */}
         {eventData && eventData.city && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#888', fontSize: '12px', marginLeft: 'auto' }}>
-            <MapPinIcon style={{ width: 14, height: 14 }} />
+          <div className="video-event-location">
+            <MapPinIcon aria-hidden="true" />
             <span>{eventData.city}</span>
           </div>
         )}
@@ -389,23 +368,25 @@ export function VideoViewer() {
               gridTemplateColumns: `repeat(${layout.cols}, 1fr)`,
             }}
           >
-            {layout.cameras.map(camera => (
-                <div key={camera} className="video-cell">
-                  {videoFiles[camera] ? (
-                    <video
-                      ref={el => { videoRefs.current[camera] = el; }}
-                      src={videoFiles[camera]}
-                      onTimeUpdate={handleTimeUpdate(camera)}
-                      onDurationChange={handleDurationChange(camera)}
-                      onEnded={pauseAll}
-                      muted
-                      playsInline
-                    />
-                  ) : (
-                    <div style={{ color: '#666', fontSize: '12px' }}>No video</div>
-                  )}
-                  <div className="video-cell-label">{CAMERAS[camera]}</div>
-                </div>
+            {layout.cameras.map((camera) => (
+              <div key={camera} className="video-cell">
+                {videoFiles[camera] ? (
+                  <video
+                    ref={(el) => {
+                      videoRefs.current[camera] = el;
+                    }}
+                    src={videoFiles[camera]}
+                    onTimeUpdate={handleTimeUpdate(camera)}
+                    onDurationChange={handleDurationChange(camera)}
+                    onEnded={pauseAll}
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <div className="video-no-video">No video</div>
+                )}
+                <div className="video-cell-label">{CAMERAS[camera]}</div>
+              </div>
             ))}
           </div>
 
@@ -436,17 +417,7 @@ export function VideoViewer() {
           </div>
         </>
       ) : (
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#888',
-          fontSize: '14px'
-        }}>
-          No recordings in {selectedCategory === 'SentryClips' ? 'Sentry Clips' :
-                           selectedCategory === 'SavedClips' ? 'Saved Clips' : 'Recent Clips'}
-        </div>
+        <div className="video-empty">No videos available</div>
       )}
     </div>
   );

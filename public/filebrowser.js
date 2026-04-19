@@ -85,7 +85,7 @@ class FileBrowser {
     if (this.drives.length > 1) {
       var rootlabeldropdown = '<select name="drive" class="fb-driveselector">';
       for (var i = 0; i < this.drives.length; i++) {
-        rootlabeldropdown += `<option value="${i}">${this.drives[i].label}</option>`
+        rootlabeldropdown += `<option value="${i}">${this.escapeHtml(this.drives[i].label)}</option>`
       }
       rootlabeldropdown += '</select><span class="fb-diskinfo-outer"><div class="fb-diskinfo-inner"><span class="fb-diskinfo"></span></div></span>'
       rootlabel.innerHTML = rootlabeldropdown;
@@ -99,7 +99,7 @@ class FileBrowser {
         this.updateButtonBar();
       };
     } else {
-      rootlabel.innerHTML = `<span class="fb-treerootpathsinglelabel">${this.drives[0].label}</span><span class="fb-diskinfo-outer"><div class="fb-diskinfo-inner"><span class="fb-diskinfo"></span></div></span>`;
+      rootlabel.innerHTML = `<span class="fb-treerootpathsinglelabel">${this.escapeHtml(this.drives[0].label)}</span><span class="fb-diskinfo-outer"><div class="fb-diskinfo-inner"><span class="fb-diskinfo"></span></div></span>`;
     }
 
     this.buttonbar = this.anchor_elem.querySelector(".fb-buttonbar");
@@ -602,20 +602,114 @@ class FileBrowser {
   fileClicked(event, path) {
     this.log(`clicked: ${path}`);
 
-    var displaypath =  path;
-    if (this.isPlayable(path)) {
-      const div = document.createElement("div");
-      div.style.position = "absolute";
-      div.style.width = "100%";
-      div.style.height = "100%";
-      div.style.left = "0";
-      div.style.top = "0";
-      div.style.background = "#0008";
-      div.onclick = (e) => { if (e.target === div) div.remove(); };
-      document.firstElementChild.append(div);
-      div.innerHTML = `<div class="fb-player"><div class="fb-playertitle">${displaypath}</div><audio autoplay controls src="${encodeURIComponent(this.root_path + "/" + path)}"></div>`;
-      div.querySelector(".fb-playertitle").scrollLeft=1000;
+    if (!this.isPlayable(path)) {
+      return;
     }
+
+    const src = encodeURIComponent(this.root_path + "/" + path);
+    const displayPath = this.escapeHtml(path);
+
+    const backdrop = document.createElement("div");
+    backdrop.className = "fb-audio-backdrop";
+    backdrop.onclick = (e) => {
+      if (e.target === backdrop) {
+        this.closeAudioOverlay(backdrop);
+      }
+    };
+    document.firstElementChild.append(backdrop);
+
+    backdrop.innerHTML = `
+      <div class="fb-player" role="dialog" aria-label="Audio player with metadata">
+        <button class="fb-player-close" aria-label="Close">&times;</button>
+        <div class="fb-playertitle">${displayPath}</div>
+        <div class="fb-player-body">
+          <div class="fb-cover fb-cover-empty" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </svg>
+          </div>
+          <dl class="fb-metadata">
+            <div class="fb-tag-status">Reading metadata…</div>
+          </dl>
+        </div>
+        <audio autoplay controls src="${src}" class="fb-player-audio"></audio>
+      </div>
+    `;
+    backdrop.querySelector(".fb-playertitle").scrollLeft = 1000;
+    backdrop.querySelector(".fb-player-close").onclick = () => this.closeAudioOverlay(backdrop);
+
+    this.loadMetadata(backdrop, src);
+  }
+
+  closeAudioOverlay(backdrop) {
+    const img = backdrop.querySelector(".fb-cover img");
+    if (img && img.src.startsWith("blob:")) {
+      URL.revokeObjectURL(img.src);
+    }
+    backdrop.remove();
+  }
+
+  loadMetadata(backdrop, url) {
+    const metadata = backdrop.querySelector(".fb-metadata");
+    const cover = backdrop.querySelector(".fb-cover");
+
+    if (!window.jsmediatags) {
+      metadata.innerHTML = `<div class="fb-tag-status">Metadata reader unavailable</div>`;
+      return;
+    }
+
+    // jsmediatags' XhrFileReader requires an absolute URL with scheme
+    const absoluteUrl = /^[a-z]+:\/\//i.test(url) ? url : new URL(url, window.location.href).href;
+
+    window.jsmediatags.read(absoluteUrl, {
+      onSuccess: ({ tags }) => {
+        const rows = [];
+        const field = (label, value) => {
+          if (value === undefined || value === null || value === "") return;
+          rows.push(`<div class="fb-tagrow"><dt>${this.escapeHtml(label)}</dt><dd>${this.escapeHtml(String(value))}</dd></div>`);
+        };
+        field("Title", tags.title);
+        field("Artist", tags.artist);
+        field("Album", tags.album);
+        field("Album Artist", tags.albumArtist || (tags.TPE2 && tags.TPE2.data));
+        field("Year", tags.year);
+        field("Genre", tags.genre);
+        field("Track", tags.track);
+        const comment = tags.comment && (typeof tags.comment === "string" ? tags.comment : tags.comment.text);
+        field("Comment", comment);
+
+        metadata.innerHTML = rows.length
+          ? rows.join("")
+          : `<div class="fb-tag-status">No metadata tags found</div>`;
+
+        if (tags.picture && tags.picture.data && tags.picture.format) {
+          try {
+            const bytes = new Uint8Array(tags.picture.data);
+            const blob = new Blob([bytes], { type: tags.picture.format });
+            const blobUrl = URL.createObjectURL(blob);
+            cover.classList.remove("fb-cover-empty");
+            cover.innerHTML = `<img src="${blobUrl}" alt="Cover art"/>`;
+          } catch (e) {
+            // leave placeholder in place
+          }
+        }
+      },
+      onError: (err) => {
+        const reason = err && err.type === "loadData" ? "Could not read file" : "No metadata found";
+        metadata.innerHTML = `<div class="fb-tag-status">${this.escapeHtml(reason)}</div>`;
+      }
+    });
+  }
+
+  escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   // From https://developer.mozilla.org/en-US/docs/Glossary/Base64#the_unicode_problem.
@@ -648,7 +742,7 @@ class FileBrowser {
   createTreeItem(label, fullPath) {
     var li = document.createElement("li");
     li.innerHTML = '<details>' +
-       '<summary class="fb-treedirentry" data-fullpath="' + this.stringEncode(fullPath) + '" draggable=true>' + label + '</summary>' +
+       '<summary class="fb-treedirentry" data-fullpath="' + this.escapeHtml(this.stringEncode(fullPath)) + '" draggable=true>' + this.escapeHtml(label) + '</summary>' +
        '<ul></ul></details>';
     const s = li.querySelector("summary");
     s.onclick = (e) => { this.dirClicked(e, this.stringDecode(e.target.dataset.fullpath)); };
@@ -689,7 +783,7 @@ class FileBrowser {
       if (request.readyState === XMLHttpRequest.DONE) {
         if (request.status === 200) {
           var type = request.getResponseHeader('Content-Type');
-          if (type.indexOf("text") !== 1) {
+          if (type.indexOf("text") !== -1) {
             if (callback != null) {
               callback(request.responseText, callbackarg);
             }

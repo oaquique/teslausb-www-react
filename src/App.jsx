@@ -7,7 +7,9 @@ import { VideoViewer } from './components/VideoViewer';
 import { FileBrowser } from './components/FileBrowser';
 import { LogViewer } from './components/LogViewer';
 import { LoadingScreen } from './components/LoadingScreen';
-import { CarIcon } from './components/Icons';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { VersionBanner } from './components/VersionBanner';
+import { CarIcon, CheckIcon, AlertIcon } from './components/Icons';
 
 // Tab definitions
 const TABS = {
@@ -20,7 +22,17 @@ const TABS = {
 export function App() {
   const [activeTab, setActiveTab] = useState(TABS.DASHBOARD);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const { status, config, storage, computed, loading, error, lastUpdate, refresh } = useStatus(5000);
+  const {
+    status,
+    config,
+    storage,
+    computed,
+    loading,
+    error,
+    lastUpdate,
+    connectionState,
+    refresh,
+  } = useStatus();
 
   // Note: Dashboard is always the default tab, no auto-switching
 
@@ -32,7 +44,11 @@ export function App() {
     availableTabs.push({ id: TABS.VIEWER, label: 'Viewer' });
   }
 
-  if (config?.has_music === 'yes' || config?.has_lightshow === 'yes' || config?.has_boombox === 'yes') {
+  if (
+    config?.has_music === 'yes' ||
+    config?.has_lightshow === 'yes' ||
+    config?.has_boombox === 'yes'
+  ) {
     availableTabs.push({ id: TABS.FILES, label: 'Files' });
   }
 
@@ -55,20 +71,44 @@ export function App() {
 
   return (
     <div className="app-shell">
+      {/* Skip link — the first focusable element on the page. Keyboard
+          users tabbing in can jump straight past the nav to the content. */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+
       {/* Top bar */}
-      <div className="app-topbar">
-        <div className="app-topbar-title">
-          <CarIcon />
+      <header className="app-topbar">
+        <h1 className="app-topbar-title">
+          <CarIcon aria-hidden="true" />
           <span>TeslaUSB</span>
-        </div>
+        </h1>
         <div className="app-topbar-actions">
-          <span className={`app-status ${computed?.drivesActive ? 'healthy' : 'warning'}`}>
+          {connectionState === 'disconnected' && (
+            <span
+              className="app-status warning app-status--stream"
+              role="status"
+              aria-label="Live connection lost, retrying"
+            >
+              <AlertIcon className="app-status-icon" aria-hidden="true" />
+              Reconnecting
+            </span>
+          )}
+          <span
+            className={`app-status ${computed?.drivesActive ? 'healthy' : 'warning'}`}
+            role="status"
+          >
+            {computed?.drivesActive ? (
+              <CheckIcon className="app-status-icon" aria-hidden="true" />
+            ) : (
+              <AlertIcon className="app-status-icon" aria-hidden="true" />
+            )}
             {computed?.drivesActive ? 'Connected' : 'Disconnected'}
           </span>
         </div>
-      </div>
+      </header>
 
-      {/* Header with tabs */}
+      {/* Tab navigation */}
       <Header
         tabs={availableTabs}
         activeTab={activeTab}
@@ -78,18 +118,29 @@ export function App() {
       />
 
       {/* Mobile quick status bar */}
-      <div className="mobile-quick-status">
+      <div className="mobile-quick-status" role="status" aria-label="System status">
         <div className="quick-status-item">
-          <div className={`status-dot-mini ${computed?.drivesActive ? 'healthy' : 'unhealthy'}`} />
+          <span
+            className={`status-dot-mini ${computed?.drivesActive ? 'healthy' : 'unhealthy'}`}
+            aria-hidden="true"
+          />
           <span className="quick-status-label">USB</span>
         </div>
         <div className="quick-status-item">
-          <div className={`status-dot-mini ${computed?.wifiConnected ? 'healthy' : 'unhealthy'}`} />
+          <span
+            className={`status-dot-mini ${computed?.wifiConnected ? 'healthy' : 'unhealthy'}`}
+            aria-hidden="true"
+          />
           <span className="quick-status-label">WiFi</span>
         </div>
         <div className="quick-status-item">
-          <div className={`status-dot-mini ${(computed?.cpuTempC && parseFloat(computed.cpuTempC) < 70) ? 'healthy' : 'unhealthy'}`} />
-          <span className="quick-status-label">{computed?.cpuTempC}°C</span>
+          <span
+            className={`status-dot-mini ${computed?.cpuTempC && parseFloat(computed.cpuTempC) < 70 ? 'healthy' : 'unhealthy'}`}
+            aria-hidden="true"
+          />
+          <span className="quick-status-label" data-live>
+            {computed?.cpuTempC}°C
+          </span>
         </div>
       </div>
 
@@ -107,31 +158,42 @@ export function App() {
           />
         )}
 
-        {/* Tab content */}
-        <main className="app-main">
+        {/* Tab content — each tab is wrapped in its own ErrorBoundary so a
+             crash in one surface can't take out the rest of the app. */}
+        <main className="app-main" id="main-content" tabIndex="-1">
           {activeTab === TABS.DASHBOARD && (
-            <Dashboard
-              status={status}
-              computed={computed}
-              config={config}
-              storage={storage}
-              onRefresh={refresh}
-            />
+            <ErrorBoundary label="Dashboard">
+              <Dashboard
+                status={status}
+                computed={computed}
+                config={config}
+                storage={storage}
+                onRefresh={refresh}
+              />
+            </ErrorBoundary>
           )}
 
           {activeTab === TABS.VIEWER && config?.has_cam === 'yes' && (
-            <VideoViewer />
+            <ErrorBoundary label="Viewer">
+              <VideoViewer />
+            </ErrorBoundary>
           )}
 
           {activeTab === TABS.FILES && (
-            <FileBrowser config={config} />
+            <ErrorBoundary label="Files">
+              <FileBrowser config={config} />
+            </ErrorBoundary>
           )}
 
           {activeTab === TABS.LOGS && (
-            <LogViewer />
+            <ErrorBoundary label="Logs">
+              <LogViewer />
+            </ErrorBoundary>
           )}
         </main>
       </div>
+
+      <VersionBanner />
     </div>
   );
 }

@@ -56,6 +56,13 @@ fi
 echo -e "${GREEN}✓ Build successful${NC}"
 echo ""
 
+# Stamp the built version into dist/VERSION so the Pi can report it back
+# via snapshot.sh. The running JS bundle compares its own __APP_VERSION__
+# against that string; any mismatch surfaces a "reload" banner to the user.
+UI_VERSION=$(node -p "require('./package.json').version")
+echo "$UI_VERSION" > dist/VERSION
+echo -e "${CYAN}Version: ${UI_VERSION}${NC}"
+
 # Show build size
 echo "Build size:"
 du -sh dist/
