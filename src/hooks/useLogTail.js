@@ -16,15 +16,45 @@ export function useLogTail(logFile, pollInterval = 2000, enabled = true) {
   const autoScrollRef = useRef(true);
   const logFileRef = useRef(logFile);
 
+  // Ref mirrors for values read from inside timers / async callbacks.
+  // These are kept in sync on every render so interval ticks always observe
+  // the latest props, not values captured when the effect ran.
+  const pollIntervalRef = useRef(pollInterval);
+  const enabledRef = useRef(enabled);
+  const inFlightRef = useRef(false);
+
+  // Keep the mirrors current. Synchronous update during render ensures the
+  // next interval tick (which runs after commit) sees the newest value.
+  pollIntervalRef.current = pollInterval;
+  enabledRef.current = enabled;
+  logFileRef.current = logFile;
+
+  // Stable refresh function. It reads everything that could change through
+  // refs (logFile via logFileRef, last byte offset via lastSizeRef,
+  // enabled-ness via enabledRef) so it never closes over stale state.
+  // Identity is stable across renders — no consumer needs to re-subscribe.
   const refresh = useCallback(async (reset = false) => {
-    if (!logFile) return;
+    const currentLogFile = logFileRef.current;
+    if (!currentLogFile) return;
+
+    // Guard against overlapping fetches. Without this, a slow request can
+    // complete after a newer one and overwrite lastSizeRef with a stale
+    // byte offset, causing double-fetches of already-processed ranges.
+    if (inFlightRef.current && !reset) return;
+    inFlightRef.current = true;
 
     try {
       if (reset) {
         lastSizeRef.current = 0;
       }
 
-      const result = await fetchLog(logFile, lastSizeRef.current);
+      const result = await fetchLog(currentLogFile, lastSizeRef.current);
+
+      // If the log file was swapped while this fetch was in flight, drop
+      // the result — a newer fetch for the new file has taken over.
+      if (logFileRef.current !== currentLogFile) {
+        return;
+      }
 
       if (result.truncated) {
         // Log was truncated, start fresh
@@ -38,7 +68,7 @@ export function useLogTail(logFile, pollInterval = 2000, enabled = true) {
         if (reset) {
           setLines(newLines.slice(-1000));
         } else {
-          setLines(prev => [...prev, ...newLines].slice(-1000)); // Keep last 1000 lines
+          setLines((prev) => [...prev, ...newLines].slice(-1000)); // Keep last 1000 lines
         }
       }
 
@@ -48,15 +78,19 @@ export function useLogTail(logFile, pollInterval = 2000, enabled = true) {
       // Only set error, don't clear lines on error
       setError(e.message);
     } finally {
+      inFlightRef.current = false;
       setLoading(false);
     }
-  }, [logFile]);
+  }, []);
 
-  // Reset when log file changes
+  // Reset when log file changes. logFileRef is synced during render so we
+  // can't use it to detect changes — track the prior value separately.
+  const prevLogFileRef = useRef(logFile);
   useEffect(() => {
-    if (logFile !== logFileRef.current) {
-      logFileRef.current = logFile;
+    if (logFile !== prevLogFileRef.current) {
+      prevLogFileRef.current = logFile;
       lastSizeRef.current = 0;
+      inFlightRef.current = false;
       setLines([]);
       setLoading(true);
       setError(null);
@@ -67,9 +101,17 @@ export function useLogTail(logFile, pollInterval = 2000, enabled = true) {
     if (!enabled || !logFile) return;
 
     refresh(true); // Initial load
-    const interval = setInterval(() => refresh(false), pollInterval);
+    const interval = setInterval(() => {
+      // Read latest enabled state through the ref. If the consumer disabled
+      // polling between ticks, the mirror reflects it immediately — no stale
+      // closure keeping us polling after the effect's deps said to stop
+      // (belt-and-suspenders; the cleanup below also clears the interval).
+      if (!enabledRef.current) return;
+      refresh(false);
+    }, pollInterval);
     return () => clearInterval(interval);
-  }, [logFile, pollInterval, enabled]); // Don't depend on refresh to avoid recreation
+    // refresh has stable identity (empty deps), so intentionally excluded.
+  }, [logFile, pollInterval, enabled, refresh]);
 
   const setAutoScroll = useCallback((value) => {
     autoScrollRef.current = value;
@@ -125,7 +167,9 @@ export function parseSyncStatus(lines) {
     const line = recentLines[i];
 
     // File count before archiving: "There are X event folder(s) with Y file(s) and Z track mode file(s)"
-    const fileCountMatch = line.match(/There are (\d+) event folder\(s\) with (\d+) file\(s\)(?: and (\d+) track mode file\(s\))?/);
+    const fileCountMatch = line.match(
+      /There are (\d+) event folder\(s\) with (\d+) file\(s\)(?: and (\d+) track mode file\(s\))?/
+    );
     if (fileCountMatch) {
       const sentryFiles = parseInt(fileCountMatch[2], 10);
       const trackModeFiles = fileCountMatch[3] ? parseInt(fileCountMatch[3], 10) : 0;
@@ -156,7 +200,10 @@ export function parseSyncStatus(lines) {
     }
     // If we hit "Connected usb to host" or "Waiting for archive to be unreachable",
     // we're in a new cycle - no active music sync
-    if (line.includes('Connected usb to host') || line.includes('Waiting for archive to be unreachable')) {
+    if (
+      line.includes('Connected usb to host') ||
+      line.includes('Waiting for archive to be unreachable')
+    ) {
       break;
     }
   }
@@ -200,18 +247,18 @@ export function parseSyncStatus(lines) {
     // Starting recording archiving
     if (line.includes('Starting recording archiving')) {
       status.state = 'archiving';
-      status.message = status.totalFiles > 0
-        ? `Archiving ${status.totalFiles} files...`
-        : 'Archiving recordings...';
+      status.message =
+        status.totalFiles > 0
+          ? `Archiving ${status.totalFiles} files...`
+          : 'Archiving recordings...';
       break;
     }
 
     // Currently archiving (fallback)
     if (line.includes('Archiving...')) {
       status.state = 'archiving';
-      status.message = status.totalFiles > 0
-        ? `Archiving ${status.totalFiles} files...`
-        : 'Archiving files...';
+      status.message =
+        status.totalFiles > 0 ? `Archiving ${status.totalFiles} files...` : 'Archiving files...';
       break;
     }
 
