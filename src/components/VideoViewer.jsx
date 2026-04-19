@@ -419,14 +419,13 @@ export function VideoViewer() {
           </div>
         </>
       ) : (
-        <div className="video-empty">
-          <EmptyState
-            icon={FilmIcon}
-            title="No recordings on this date"
-            subtitle="Pick a different date or check that TeslaCam is recording."
-            tone="neutral"
-          />
-        </div>
+        <EmptyState
+          icon={FilmIcon}
+          title="No recordings on this date"
+          subtitle="Pick a different date or check that TeslaCam is recording."
+          tone="neutral"
+          fill
+        />
       )}
     </div>
   );

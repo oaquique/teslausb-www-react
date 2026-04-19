@@ -23,6 +23,13 @@
   background: transparent;
 }
 
+/* Fill modifier — expand to fill parent's flex space.
+   Use when the parent is a flex-column container that would otherwise
+   leave empty vertical space (VideoViewer video area, LogViewer content). */
+.empty-state--fill {
+  flex: 1;
+}
+
 /* Positive tone — "all clear" soft green gradient */
 .empty-state--positive {
   background: linear-gradient(

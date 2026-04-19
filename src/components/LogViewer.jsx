@@ -8,6 +8,7 @@ import {
   TrashIcon,
   InfoIcon,
   FileTextIcon,
+  AlertTriangleIcon,
 } from './Icons';
 import { EmptyState } from './EmptyState';
 
@@ -183,15 +184,33 @@ export function LogViewer() {
 
         <div className="log-viewer-content" ref={logContainerRef}>
           {(loading && displayLines.length === 0) || diagnosticsLoading ? (
-            <div className="log-message log-message--info">Loading...</div>
+            <EmptyState
+              icon={RefreshIcon}
+              title="Loading…"
+              tone="neutral"
+              fill
+            />
           ) : error ? (
             error.includes('not found') ? (
-              <div className="log-message log-message--info">
-                Log file not available.{' '}
-                {activeLog === 'setup' && 'The setup log is only present during initial setup.'}
-              </div>
+              <EmptyState
+                icon={InfoIcon}
+                title="Log file not available"
+                subtitle={
+                  activeLog === 'setup'
+                    ? 'The setup log is only present during initial setup.'
+                    : undefined
+                }
+                tone="neutral"
+                fill
+              />
             ) : (
-              <div className="log-message log-message--error">Error: {error}</div>
+              <EmptyState
+                icon={AlertTriangleIcon}
+                title="Couldn’t load log"
+                subtitle={error}
+                tone="neutral"
+                fill
+              />
             )
           ) : displayLines.length === 0 ? (
             <EmptyState
@@ -199,6 +218,7 @@ export function LogViewer() {
               title="Log is empty"
               subtitle="No activity has been written yet."
               tone="neutral"
+              fill
             />
           ) : (
             displayLines.map((line, idx) => (

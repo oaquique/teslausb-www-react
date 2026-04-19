@@ -1673,13 +1673,12 @@ body {
   font-size: var(--text-sm);
 }
 
-.video-empty,
 .video-centered {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #a8a29e;
+  color: var(--text-tertiary);
   font-size: var(--text-md);
 }
 
