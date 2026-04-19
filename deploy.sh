@@ -82,7 +82,19 @@ if [ -z "$1" ]; then
     exit 0
 fi
 
-REMOTE_HOST="$1"
+FORCE_DEPLOY=0
+REMOTE_HOST=""
+for arg in "$@"; do
+    case "$arg" in
+        --force) FORCE_DEPLOY=1 ;;
+        *)       REMOTE_HOST="$arg" ;;
+    esac
+done
+
+if [ -z "$REMOTE_HOST" ]; then
+    echo -e "${RED}Error: no host provided${NC}"
+    exit 1
+fi
 
 echo -e "${YELLOW}Deploying to ${REMOTE_HOST}...${NC}"
 echo ""
@@ -96,6 +108,22 @@ if ! ssh -o ConnectTimeout=5 "$REMOTE_HOST" "echo 'SSH connection successful'" 2
     echo "  2. SSH is enabled on the Pi"
     echo "  3. You can SSH to the Pi manually: ssh ${REMOTE_HOST}"
     exit 1
+fi
+
+# Version guard — refuse to redeploy the same version unless --force.
+# The pre-commit hook auto-bumps patch on ship-worthy changes, so matching
+# versions usually means you forgot to commit or you're re-running deploy
+# without changes. Either way, fail loud.
+REMOTE_VERSION=$(ssh "$REMOTE_HOST" 'cat /var/www/html/VERSION 2>/dev/null' | tr -d '[:space:]')
+if [ -n "$REMOTE_VERSION" ] && [ "$UI_VERSION" = "$REMOTE_VERSION" ]; then
+    if [ "$FORCE_DEPLOY" -eq 1 ]; then
+        echo -e "${YELLOW}Version ${UI_VERSION} already on ${REMOTE_HOST}; --force set, redeploying.${NC}"
+    else
+        echo -e "${RED}Version ${UI_VERSION} is already deployed on ${REMOTE_HOST}.${NC}"
+        echo "Bump the version (commit a change under src/, cgi-bin/, or public/)"
+        echo "or pass --force to redeploy the same version."
+        exit 1
+    fi
 fi
 
 # Upload files to temp directory first (this works on read-only fs)

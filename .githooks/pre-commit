@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Auto-bump patch version when a commit touches ship-worthy paths.
+#
+# "Ship-worthy" = files that end up in the deployed bundle on the Pi:
+#   src/**, cgi-bin/**, public/** (except fancyindex.css, preserved on
+#   the Pi)
+#
+# Doc/test/tooling changes (AUDIT.md, tests/**, .githooks/**, scripts/**,
+# *.md, config files) don't trigger a bump so we don't burn versions on
+# non-shipping work.
+#
+# Minor and major bumps stay manual — edit package.json directly when
+# you want those.
+
+set -e
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
+
+# Match anything under src/, cgi-bin/, or public/ that isn't fancyindex.css
+SHIP=$(echo "$STAGED" | grep -E '^(src/|cgi-bin/|public/)' | grep -v '^public/fancyindex\.css$' || true)
+
+if [ -z "$SHIP" ]; then
+  exit 0
+fi
+
+# If package.json is already staged with a version change, assume the
+# committer is doing an explicit manual bump — don't touch it.
+if echo "$STAGED" | grep -q '^package\.json$'; then
+  if git diff --cached package.json | grep -q '^[+-] *"version"'; then
+    exit 0
+  fi
+fi
+
+CURRENT=$(node -p "require('./package.json').version")
+npm --silent version patch --no-git-tag-version > /dev/null
+NEW=$(node -p "require('./package.json').version")
+
+git add package.json package-lock.json 2>/dev/null || git add package.json
+
+echo "auto-bumped version: $CURRENT → $NEW"
