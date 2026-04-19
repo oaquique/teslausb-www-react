@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   CpuIcon,
   WifiIcon,
@@ -23,6 +23,7 @@ import { useToast } from '../hooks/useToast';
 // Stable ids let us "upgrade" a toast in place (e.g. "Running…" → "Done")
 // instead of stacking two toasts for the same logical operation.
 const TOAST_IDS = {
+  toggleDrives: 'sidebar-toggle-drives',
   reboot: 'sidebar-reboot',
   speedTest: 'sidebar-speed-test',
   ble: 'sidebar-ble-pair',
@@ -36,6 +37,17 @@ export function Sidebar({ status, computed, config, expanded, onToggle, onRefres
   const [speedTestResult, setSpeedTestResult] = useState(null);
   const [bleStatus, setBleStatus] = useState(null);
 
+  // BLE pairing polls every 2s for up to 2 min. If the sidebar unmounts
+  // mid-flight (tab switch, route change), the in-flight loop would keep
+  // pinging the backend and firing state updates on an unmounted component.
+  // This flag lets the loop short-circuit on teardown.
+  const bleCancelledRef = useRef(false);
+  useEffect(() => {
+    return () => {
+      bleCancelledRef.current = true;
+    };
+  }, []);
+
   const handleToggleDrives = async () => {
     setUsbLoading(true);
     try {
@@ -43,6 +55,7 @@ export function Sidebar({ status, computed, config, expanded, onToggle, onRefres
       setTimeout(onRefresh, 1000);
     } catch (e) {
       console.error('Toggle drives failed:', e);
+      toast.danger('Failed to toggle USB drives', { id: TOAST_IDS.toggleDrives });
     } finally {
       setUsbLoading(false);
     }
@@ -116,10 +129,13 @@ export function Sidebar({ status, computed, config, expanded, onToggle, onRefres
     });
     try {
       const started = await startBLEPairing();
+      if (bleCancelledRef.current) return;
       if (started) {
         for (let i = 0; i < 60; i++) {
           await new Promise((r) => setTimeout(r, 2000));
+          if (bleCancelledRef.current) return;
           const paired = await checkBLEStatus();
+          if (bleCancelledRef.current) return;
           if (paired) {
             setBleStatus('paired');
             toast.success('Bluetooth paired', { id: TOAST_IDS.ble });
@@ -133,6 +149,7 @@ export function Sidebar({ status, computed, config, expanded, onToggle, onRefres
         toast.danger('Bluetooth pairing failed', { id: TOAST_IDS.ble });
       }
     } catch (e) {
+      if (bleCancelledRef.current) return;
       console.error('BLE pairing failed:', e);
       setBleStatus('error');
       toast.danger('Bluetooth pairing failed', { id: TOAST_IDS.ble });
@@ -343,13 +360,6 @@ function getTempClass(temp) {
   if (t >= 80) return 'status-unhealthy';
   if (t >= 70) return 'status-degraded';
   return 'status-healthy';
-}
-
-function getStorageClass(percent) {
-  if (!percent) return 'blue';
-  if (percent >= 90) return 'red';
-  if (percent >= 75) return 'yellow';
-  return 'blue';
 }
 
 function formatSnapshotDate(timestamp) {
