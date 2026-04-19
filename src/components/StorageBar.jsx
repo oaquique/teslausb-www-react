@@ -1,3 +1,6 @@
+import { EmptyState } from './EmptyState';
+import { HardDriveIcon } from './Icons';
+
 /**
  * Storage visualization component
  * Shows per-drive allocation/usage and available free space
@@ -38,7 +41,12 @@ export function StorageBar({ storage, total, free, config }) {
   if (drives.length === 0 && !freeBytes) {
     return (
       <div className="storage-bar-container">
-        <div className="storage-empty">No storage data available</div>
+        <EmptyState
+          icon={HardDriveIcon}
+          title="No storage data yet"
+          subtitle="Waiting for the first status refresh from TeslaUSB."
+          tone="neutral"
+        />
       </div>
     );
   }

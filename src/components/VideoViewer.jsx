@@ -8,7 +8,9 @@ import {
   LayoutIcon,
   MapPinIcon,
   ChevronDownIcon,
+  FilmIcon,
 } from './Icons';
+import { EmptyState } from './EmptyState';
 
 // Camera angles in Tesla vehicles
 const CAMERAS = {
@@ -417,7 +419,14 @@ export function VideoViewer() {
           </div>
         </>
       ) : (
-        <div className="video-empty">No videos available</div>
+        <div className="video-empty">
+          <EmptyState
+            icon={FilmIcon}
+            title="No recordings on this date"
+            subtitle="Pick a different date or check that TeslaCam is recording."
+            tone="neutral"
+          />
+        </div>
       )}
     </div>
   );

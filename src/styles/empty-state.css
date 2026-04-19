@@ -1,0 +1,92 @@
+/* ==============================================
+   EmptyState — Design System empty-state pattern.
+   Centered icon + title + subtitle + optional action.
+   Two tones: neutral (no data yet), positive (all clear).
+   ============================================== */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-6);
+  min-height: 180px;
+  border-radius: var(--radius-md);
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Neutral tone — "no data yet" */
+.empty-state--neutral {
+  background: transparent;
+}
+
+/* Positive tone — "all clear" soft green gradient */
+.empty-state--positive {
+  background: linear-gradient(
+    180deg,
+    var(--color-success-bg) 0%,
+    transparent 100%
+  );
+}
+
+/* Icon wrapper — 32px icon rendered centered */
+.empty-state__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-bottom: var(--space-1);
+}
+
+.empty-state__icon-svg {
+  width: 32px;
+  height: 32px;
+  stroke-width: 2;
+}
+
+.empty-state__icon--neutral {
+  color: var(--color-secondary);
+}
+
+.empty-state__icon--positive {
+  color: var(--color-success);
+}
+
+/* Title — display font, 16px, weight 600 */
+.empty-state__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-heading);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+/* Subtitle — body font, ~13–14px, secondary color,
+   constrained to ~45 characters per line for readability. */
+.empty-state__subtitle {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 400;
+  color: var(--color-secondary);
+  line-height: 1.5;
+  max-width: 45ch;
+}
+
+.empty-state__action {
+  margin-top: var(--space-3);
+}
+
+/* Respect reduced motion — the component itself has no animation,
+   but this keeps intent clear for any future additions. */
+@media (prefers-reduced-motion: reduce) {
+  .empty-state {
+    transition: none;
+  }
+}

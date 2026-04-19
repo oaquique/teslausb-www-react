@@ -7,7 +7,9 @@ import {
   DownloadIcon,
   TrashIcon,
   InfoIcon,
+  FileTextIcon,
 } from './Icons';
+import { EmptyState } from './EmptyState';
 
 // Log types
 const LOG_TYPES = {
@@ -192,7 +194,12 @@ export function LogViewer() {
               <div className="log-message log-message--error">Error: {error}</div>
             )
           ) : displayLines.length === 0 ? (
-            <div className="log-message log-message--info">Log is empty.</div>
+            <EmptyState
+              icon={FileTextIcon}
+              title="Log is empty"
+              subtitle="No activity has been written yet."
+              tone="neutral"
+            />
           ) : (
             displayLines.map((line, idx) => (
               <div key={idx} className={`log-line ${getLineClass(line)}`}>
