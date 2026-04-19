@@ -12,8 +12,8 @@ export function useLogTail(logFile, pollInterval = 2000, enabled = true) {
   const [lines, setLines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [autoScroll, setAutoScrollState] = useState(true);
   const lastSizeRef = useRef(0);
-  const autoScrollRef = useRef(true);
   const logFileRef = useRef(logFile);
 
   // Ref mirrors for values read from inside timers / async callbacks.
@@ -113,8 +113,13 @@ export function useLogTail(logFile, pollInterval = 2000, enabled = true) {
     // refresh has stable identity (empty deps), so intentionally excluded.
   }, [logFile, pollInterval, enabled, refresh]);
 
+  // autoScroll is real state so consumers re-render when it flips. Earlier
+  // versions stored it in a ref and returned the snapshot, which meant the
+  // returned `autoScroll` value only updated when some *other* state change
+  // triggered a render — easy to miss in useEffect deps and for conditional
+  // JSX rendering.
   const setAutoScroll = useCallback((value) => {
-    autoScrollRef.current = value;
+    setAutoScrollState(value);
   }, []);
 
   const clear = useCallback(() => {
@@ -126,7 +131,7 @@ export function useLogTail(logFile, pollInterval = 2000, enabled = true) {
     lines,
     loading,
     error,
-    autoScroll: autoScrollRef.current,
+    autoScroll,
     setAutoScroll,
     refresh: () => refresh(false),
     clear,

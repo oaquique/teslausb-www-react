@@ -381,7 +381,22 @@ export async function fetchLog(logFile, lastSize = 0) {
 
   const content = await response.text();
 
-  // For range requests (206), calculate new size from content-range header or content length
+  // Track byte offsets, not character counts. Log files are bytes on disk,
+  // so Range headers / lastSize are byte positions. For ASCII logs bytes
+  // and chars coincide, but any non-ASCII glyph (user names, filenames
+  // with accents, emoji in commits) is multi-byte in UTF-8 and would
+  // desync lastSize if we used content.length (character count).
+  const byteLength = (text) => {
+    const cl = response.headers.get('Content-Length');
+    if (cl) {
+      const n = parseInt(cl, 10);
+      if (Number.isFinite(n)) return n;
+    }
+    return new TextEncoder().encode(text).length;
+  };
+
+  // For range requests (206), calculate new size from content-range header
+  // first (authoritative); fall back to byte-encoded length.
   let newSize = lastSize;
   if (response.status === 206) {
     const contentRange = response.headers.get('Content-Range');
@@ -391,14 +406,14 @@ export async function fetchLog(logFile, lastSize = 0) {
       if (match) {
         newSize = parseInt(match[1], 10) + 1;
       } else {
-        newSize = lastSize + content.length;
+        newSize = lastSize + byteLength(content);
       }
     } else {
-      newSize = lastSize + content.length;
+      newSize = lastSize + byteLength(content);
     }
   } else {
     // Full response (200)
-    newSize = content.length;
+    newSize = byteLength(content);
   }
 
   return {
