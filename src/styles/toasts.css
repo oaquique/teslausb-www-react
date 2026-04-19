@@ -1,0 +1,137 @@
+/* ==============================================
+   Toast notifications
+   Spec: Design System "Toasts & Notifications" section.
+   - Fixed bottom-right, 16px inset
+   - Warm card background, left 3px semantic accent (set inline per variant)
+   - Newest on top, 8px gap, max 3 visible
+   - Slide-up + fade entrance via CSS transition (no Framer Motion)
+   - Respects prefers-reduced-motion (opacity-only crossfade)
+   ============================================== */
+
+.toast-container {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 1000; /* Design System toast layer */
+
+  display: flex;
+  /* column-reverse keeps first DOM child at the bottom of the visual stack
+     so newest toasts (prepended in state) render on top. Screen readers
+     still announce in DOM order, which matches insertion order. */
+  flex-direction: column-reverse;
+  gap: 8px;
+
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  /* Don't block clicks to the UI through gaps between toasts. */
+  pointer-events: none;
+  max-width: 400px;
+  width: calc(100vw - 32px); /* Respect the 16px insets on small screens */
+}
+
+.toast {
+  pointer-events: auto;
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: flex-start;
+  gap: 12px;
+
+  padding: 12px 16px;
+  min-height: 44px; /* Comfortable tap target for the dismiss button */
+
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+
+  color: var(--color-body);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.5;
+
+  /* Entrance starting state — slid down and transparent. */
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 0.25s cubic-bezier(0, 0, 0.2, 1),
+    transform 0.25s cubic-bezier(0, 0, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+.toast.toast--enter {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* Semantic color set inline per variant; SVG inherits currentColor. */
+}
+
+.toast__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.toast__message {
+  color: var(--color-body);
+  /* Allow long messages to wrap rather than forcing the card to overflow. */
+  word-break: break-word;
+  align-self: center;
+}
+
+.toast__close {
+  /* Reset button chrome */
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  margin: -4px -4px -4px 0; /* Expand hit area without visually enlarging */
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  color: var(--color-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.toast__close:hover {
+  background: var(--color-subtle);
+  color: var(--color-body);
+}
+
+.toast__close:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.toast__close svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Reduced motion — replace slide-up with an opacity-only crossfade.
+   No transform, no position change. Keeping opacity is explicitly allowed
+   by the Design System reduced-motion rule. */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transform: none;
+    transition: opacity 0.15s linear;
+  }
+  .toast.toast--enter {
+    transform: none;
+  }
+  .toast__close {
+    transition: none;
+  }
+}

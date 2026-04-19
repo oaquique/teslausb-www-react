@@ -9,6 +9,8 @@ import { LogViewer } from './components/LogViewer';
 import { LoadingScreen } from './components/LoadingScreen';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { VersionBanner } from './components/VersionBanner';
+import { ToastContainer } from './components/ToastContainer';
+import { ToastProvider } from './hooks/useToast';
 import { CarIcon, CheckIcon, AlertIcon } from './components/Icons';
 
 // Tab definitions
@@ -20,6 +22,19 @@ const TABS = {
 };
 
 export function App() {
+  // Toast provider wraps the entire tree so any descendant — loading screen,
+  // error screen, or main shell — can publish toasts. ToastContainer is the
+  // single root sink; it lives at the outermost level so it renders over any
+  // content regardless of which early-return path we take.
+  return (
+    <ToastProvider>
+      <AppInner />
+      <ToastContainer />
+    </ToastProvider>
+  );
+}
+
+function AppInner() {
   const [activeTab, setActiveTab] = useState(TABS.DASHBOARD);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const {

@@ -18,8 +18,18 @@ import {
   startBLEPairing,
   checkBLEStatus,
 } from '../services/api';
+import { useToast } from '../hooks/useToast';
+
+// Stable ids let us "upgrade" a toast in place (e.g. "Running…" → "Done")
+// instead of stacking two toasts for the same logical operation.
+const TOAST_IDS = {
+  reboot: 'sidebar-reboot',
+  speedTest: 'sidebar-speed-test',
+  ble: 'sidebar-ble-pair',
+};
 
 export function Sidebar({ status, computed, config, expanded, onToggle, onRefresh }) {
+  const toast = useToast();
   const [usbLoading, setUsbLoading] = useState(false);
   const [rebootLoading, setRebootLoading] = useState(false);
   const [speedTestRunning, setSpeedTestRunning] = useState(false);
@@ -41,6 +51,14 @@ export function Sidebar({ status, computed, config, expanded, onToggle, onRefres
   const handleReboot = async () => {
     if (confirm('Are you sure you want to restart TeslaUSB?')) {
       setRebootLoading(true);
+      // Sticky warning toast — the Pi is about to vanish off the network
+      // for ~60s, so the user needs a persistent cue that "nothing's
+      // broken, just wait". We don't auto-dismiss because the page goes
+      // unresponsive during the restart and a 4s dismiss would vanish
+      // before the backend is even down.
+      toast.warning('Restarting TeslaUSB — reconnect in ~60s', {
+        id: TOAST_IDS.reboot,
+      });
       try {
         await reboot();
       } catch (e) {
@@ -55,11 +73,32 @@ export function Sidebar({ status, computed, config, expanded, onToggle, onRefres
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
+    // Running toast — sticky (duration null) so it doesn't self-dismiss
+    // mid-test. We'll upgrade it in-place to success or danger below.
+    toast.info('Running speed test…', { id: TOAST_IDS.speedTest, duration: null });
+
     try {
-      await runSpeedTest((speed) => setSpeedTestResult(speed.toFixed(1)), controller.signal);
+      let latestSpeed = null;
+      await runSpeedTest((speed) => {
+        latestSpeed = speed;
+        setSpeedTestResult(speed.toFixed(1));
+      }, controller.signal);
+
+      // Finished cleanly — swap the running toast for a success result.
+      if (latestSpeed != null) {
+        toast.success(`Speed test: ${latestSpeed.toFixed(1)} Mbps`, {
+          id: TOAST_IDS.speedTest,
+        });
+      } else {
+        // No callback fired — treat as failure since we have no number to show.
+        toast.danger('Speed test failed', { id: TOAST_IDS.speedTest });
+      }
     } catch (e) {
-      if (e.name !== 'AbortError') {
+      if (e.name === 'AbortError') {
+        toast.danger('Speed test timed out', { id: TOAST_IDS.speedTest });
+      } else {
         console.error('Speed test failed:', e);
+        toast.danger('Speed test failed', { id: TOAST_IDS.speedTest });
       }
     } finally {
       clearTimeout(timeout);
@@ -69,6 +108,12 @@ export function Sidebar({ status, computed, config, expanded, onToggle, onRefres
 
   const handleBLEPairing = async () => {
     setBleStatus('pairing');
+    // Sticky info toast for the duration of the 2-minute polling loop.
+    // Upgraded in place to success/danger as the outcome resolves.
+    toast.info('Pairing Bluetooth — up to 2 min', {
+      id: TOAST_IDS.ble,
+      duration: null,
+    });
     try {
       const started = await startBLEPairing();
       if (started) {
@@ -77,16 +122,20 @@ export function Sidebar({ status, computed, config, expanded, onToggle, onRefres
           const paired = await checkBLEStatus();
           if (paired) {
             setBleStatus('paired');
+            toast.success('Bluetooth paired', { id: TOAST_IDS.ble });
             return;
           }
         }
         setBleStatus('timeout');
+        toast.danger('Bluetooth pairing failed', { id: TOAST_IDS.ble });
       } else {
         setBleStatus('error');
+        toast.danger('Bluetooth pairing failed', { id: TOAST_IDS.ble });
       }
     } catch (e) {
       console.error('BLE pairing failed:', e);
       setBleStatus('error');
+      toast.danger('Bluetooth pairing failed', { id: TOAST_IDS.ble });
     }
   };
 
