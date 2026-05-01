@@ -42,13 +42,13 @@
   padding: 12px 16px;
   min-height: 44px; /* Comfortable tap target for the dismiss button */
 
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
 
-  color: var(--color-body);
-  font-family: var(--font-sans);
+  color: var(--color-text-body);
+  font-family: var(--font-body);
   font-size: var(--text-base);
   line-height: 1.5;
 
@@ -80,7 +80,7 @@
 }
 
 .toast__message {
-  color: var(--color-body);
+  color: var(--color-text-body);
   /* Allow long messages to wrap rather than forcing the card to overflow. */
   word-break: break-word;
   align-self: center;
@@ -99,19 +99,19 @@
   justify-content: center;
   flex-shrink: 0;
 
-  color: var(--color-secondary);
+  color: var(--color-text-secondary);
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: background-color 150ms ease, color 150ms ease;
 }
 
 .toast__close:hover {
-  background: var(--color-subtle);
-  color: var(--color-body);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-body);
 }
 
 .toast__close:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
 }
 
